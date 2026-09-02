@@ -1,27 +1,35 @@
 package org.example.repository;
 
-import org.example.exceptions.BankAccountExistsException;
+import org.example.exceptions.RepositoryItemExistsexception;
 import org.example.model.BankAccount;
 
+
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class BankAccountRepository {
-    private final ConcurrentHashMap<UUID, BankAccount> account = new ConcurrentHashMap<>();
+public class BankAccountRepository implements Repository<UUID, BankAccount> {
+    private final ConcurrentHashMap<UUID, BankAccount> repository = new ConcurrentHashMap<>();
 
-    public BankAccount findById(UUID id) {
-        return account.get(id);
+    @Override
+    public void save(UUID id, BankAccount item) {
+        BankAccount value = repository.putIfAbsent(id, item);
+        if (value != null) throw new RepositoryItemExistsexception("Такой счет уже есть");
     }
 
-    public void removeAccount(UUID id) {
-        account.remove(id);
+    @Override
+    public void delete(UUID id) {
+        repository.remove(id);
     }
 
-    public void addAccount(BankAccount bankAccount) {
-        if (account.containsKey(bankAccount.getId())) {
-            throw new BankAccountExistsException("Account already exists");
-        }
+    @Override
+    public Optional<BankAccount> get(UUID id) {
+        return Optional.ofNullable(repository.get(id));
+    }
 
-        account.put(bankAccount.getId(), bankAccount);
+    @Override
+    public  List<BankAccount> getAll() {
+        return repository.values().stream().toList();
     }
 }

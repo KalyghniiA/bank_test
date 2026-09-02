@@ -5,12 +5,15 @@ import org.example.exceptions.BalanceNegativeException;
 import java.math.BigDecimal;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 
 public class BankAccount {
     private final UUID id;
     private final UUID userId;
     private BigDecimal balance;//пока в однопоточном
+    private final Lock lock = new ReentrantLock();
 
     public BankAccount(UUID userId) {
         this.id = UUID.randomUUID();
@@ -47,6 +50,15 @@ public class BankAccount {
     public void setBalance(BigDecimal amount) {
         if (amount.doubleValue() < 0) throw new BalanceNegativeException("Баланс не может быть отрицательным");
         this.balance = amount;
+    }
+
+    public BankAccount lock() {
+        lock.lock();
+        return this;
+    }
+
+    public void unlock() {
+        lock.unlock();
     }
 
     @Override
