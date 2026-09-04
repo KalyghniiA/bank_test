@@ -40,9 +40,9 @@ public class BankAccountService {
                 accountFrom.lock();
             }
 
-            BigDecimal accountFromBalance = accountFrom.getBalance();
-            if (accountFromBalance.compareTo(amount) < 0) throw new BalanceLimitException("Сумма списания больше баланса счета списания");
 
+            if (accountFrom.checkBalanceLimit(amount)) throw new BalanceLimitException("Сумма списания больше баланса счета списания");
+            BigDecimal accountFromBalance = accountFrom.getBalance();
             accountFrom.setBalance(accountFromBalance.subtract(amount));
             Transaction transactionFrom = new Transaction(fromId, TransactionType.TRANSFER_IN, amount, toId);
             transactionRepository.save(transactionFrom.getTransactionId(), transactionFrom);
@@ -87,7 +87,7 @@ public class BankAccountService {
         BankAccount account = bankAccountRepository.get(accountId).orElseThrow(() -> new EmptyAccountException(accountId.toString()));
         try {
             account.lock();
-            if (account.getBalance().compareTo(amount) < 0) throw new BalanceLimitException("Баланс меньше суммы списания");
+            if (account.checkBalanceLimit(amount)) throw new BalanceLimitException("Баланс меньше суммы списания");
             account.setBalance(account.getBalance().subtract(amount));
             Transaction transaction = new Transaction(accountId, TransactionType.WITHDRAW, amount);
             transactionRepository.save(transaction.getTransactionId(), transaction);
