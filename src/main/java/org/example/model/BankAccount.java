@@ -12,7 +12,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class BankAccount {
     private final UUID id;
     private final UUID userId;
-    private BigDecimal balance;//пока в однопоточном
+    protected BigDecimal balance;//пока в однопоточном
     private final Lock lock = new ReentrantLock();
 
     public BankAccount(UUID userId) {
@@ -59,6 +59,10 @@ public class BankAccount {
 
     public void unlock() {
         lock.unlock();
+    }
+
+    public boolean checkBalanceLimit(BigDecimal amount) {
+        return balance.compareTo(amount) < 0;
     }
 
     @Override
