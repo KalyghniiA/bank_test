@@ -11,7 +11,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class SavingAccount extends BankAccount {
+public class SavingAccount extends BankAccount implements InterestBearingAccount{
     private int withdrawLimit;
     private final int maxWithdrawalLimit;
     private LocalDate dateLastAccrual = LocalDate.now();
@@ -61,6 +61,7 @@ public class SavingAccount extends BankAccount {
         return withdrawLimit;
     }
 
+    @Override
     public void accrueInterestIfDue(Clock clock) {
         LocalDate timeUpdated = LocalDate.now(clock);
         int differenceMonth = (int) ChronoUnit.DAYS.between(dateLastAccrual, timeUpdated) / 30;

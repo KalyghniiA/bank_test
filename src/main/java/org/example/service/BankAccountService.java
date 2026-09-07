@@ -2,20 +2,27 @@ package org.example.service;
 
 import org.example.exceptions.*;
 import org.example.model.BankAccount;
+import org.example.model.InterestBearingAccount;
 import org.example.model.Transaction;
 import org.example.repository.Repository;
+import org.example.util.InterestAccrualService;
 import org.example.util.TransactionType;
 
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.UUID;
 
 public class BankAccountService {
     private final Repository<UUID, BankAccount> bankAccountRepository;
     private final Repository<UUID, Transaction> transactionRepository;
+    private final Clock clock;
 
     public BankAccountService(Repository<UUID, BankAccount> bankAccountRepository, Repository<UUID, Transaction> transactionRepository) {
         this.bankAccountRepository = bankAccountRepository;
         this.transactionRepository = transactionRepository;
+        this.clock = Clock.systemUTC();
     }
 
     public void transfer(UUID fromId, UUID toId, BigDecimal amount) {
@@ -40,12 +47,15 @@ public class BankAccountService {
                 accountFrom.lock();
             }
 
+            InterestAccrualService.accrueIfDue(accountFrom, clock);
+            InterestAccrualService.accrueIfDue(accountTo, clock);
 
             if (accountFrom.checkBalanceLimit(amount)) throw new BalanceLimitException("Сумма списания больше баланса счета списания");
             BigDecimal accountFromBalance = accountFrom.getBalance();
             accountFrom.setBalance(accountFromBalance.subtract(amount));
             Transaction transactionFrom = new Transaction(fromId, TransactionType.TRANSFER_IN, amount, toId);
             transactionRepository.save(transactionFrom.getTransactionId(), transactionFrom);
+
 
             accountTo.setBalance(accountTo.getBalance().add(amount));
             Transaction transactionTo = new Transaction(toId, TransactionType.TRANSFER_OUT, amount, fromId);
@@ -66,6 +76,7 @@ public class BankAccountService {
                         account ->{
                             try {
                                 account.lock();
+                                InterestAccrualService.accrueIfDue(account, clock);
                                 account.setBalance(account.getBalance().add(amount));
                                 Transaction transaction = new Transaction(accountId, TransactionType.DEPOSIT, amount);
                                 transactionRepository.save(transaction.getTransactionId(), transaction);
@@ -87,6 +98,7 @@ public class BankAccountService {
         BankAccount account = bankAccountRepository.get(accountId).orElseThrow(() -> new EmptyAccountException(accountId.toString()));
         try {
             account.lock();
+            InterestAccrualService.accrueIfDue(account, clock);
             if (account.checkBalanceLimit(amount)) throw new BalanceLimitException("Баланс меньше суммы списания");
             account.setBalance(account.getBalance().subtract(amount));
             Transaction transaction = new Transaction(accountId, TransactionType.WITHDRAW, amount);
