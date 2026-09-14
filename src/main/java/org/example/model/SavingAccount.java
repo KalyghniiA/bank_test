@@ -6,12 +6,10 @@ import org.example.util.Constant;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 
-public class SavingAccount extends BankAccount implements InterestBearingAccount{
+public class SavingAccount extends BankAccount implements InterestBearingAccount {
     private int withdrawLimit;
     private final int maxWithdrawalLimit;
     private LocalDate dateLastAccrual = LocalDate.now();

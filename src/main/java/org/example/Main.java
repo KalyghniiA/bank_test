@@ -8,6 +8,9 @@ import org.example.repository.TransactionRepository;
 import org.example.service.BankAccountService;
 
 import java.math.BigDecimal;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;

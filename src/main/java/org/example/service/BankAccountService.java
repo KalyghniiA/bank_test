@@ -2,7 +2,6 @@ package org.example.service;
 
 import org.example.exceptions.*;
 import org.example.model.BankAccount;
-import org.example.model.InterestBearingAccount;
 import org.example.model.Transaction;
 import org.example.repository.Repository;
 import org.example.util.InterestAccrualService;
@@ -10,8 +9,6 @@ import org.example.util.TransactionType;
 
 import java.math.BigDecimal;
 import java.time.Clock;
-import java.time.Instant;
-import java.time.ZoneOffset;
 import java.util.UUID;
 
 public class BankAccountService {
@@ -73,7 +70,7 @@ public class BankAccountService {
 
         bankAccountRepository.get(accountId)
                 .ifPresentOrElse(
-                        account ->{
+                        account -> {
                             try {
                                 account.lock();
                                 InterestAccrualService.accrueIfDue(account, clock);

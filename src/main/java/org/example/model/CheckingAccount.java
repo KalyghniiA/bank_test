@@ -5,7 +5,7 @@ import org.example.exceptions.BalanceNegativeException;
 import java.math.BigDecimal;
 import java.util.UUID;
 
-public class CheckingAccount extends BankAccount{
+public class CheckingAccount extends BankAccount {
     private final BigDecimal overdraftLimit; // не уверен насчет финализации
 
     public CheckingAccount(UUID userId) {
