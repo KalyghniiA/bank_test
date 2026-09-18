@@ -1,22 +1,70 @@
 package org.example.model;
 
-import java.util.ArrayList;
-import java.util.List;
+import org.example.util.PersonStatus;
+
+import java.time.LocalDate;
 import java.util.Objects;
 import java.util.UUID;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 public class Person {
     private final UUID id;
     private String firstName;
-    private String lastName;
-    private final CopyOnWriteArrayList<BankAccount> bankAccounts;
+    private String subName;
+    private String middleName;
+    private LocalDate birthDate;
+    private String phoneNumber;
+    private String email;
+    private PersonStatus status;
 
-    public Person(String firstName, String lastName) {
+    public Person(String firstName,
+                  String subName,
+                  String middleName,
+                  LocalDate birthDate,
+                  String phoneNumber,
+                  String email) {
         this.id = UUID.randomUUID();
         this.firstName = firstName;
-        this.lastName = lastName;
-        this.bankAccounts = new CopyOnWriteArrayList<>();
+        this.subName = subName;
+        this.middleName = middleName;
+        this.birthDate = birthDate;
+        this.phoneNumber = phoneNumber;
+        this.email = email;
+        this.status = PersonStatus.ACTIVE;
+    }
+
+    public Person(UUID id,
+                  String firstName,
+                  String subName,
+                  String middleName,
+                  LocalDate birthDate,
+                  String phoneNumber,
+                  String email) {
+        this.id = id;
+        this.firstName = firstName;
+        this.subName = subName;
+        this.middleName = middleName;
+        this.birthDate = birthDate;
+        this.phoneNumber = phoneNumber;
+        this.email = email;
+        this.status = PersonStatus.ACTIVE;
+    }
+
+    public Person(UUID id,
+                  String firstName,
+                  String subName,
+                  String middleName,
+                  LocalDate birthDate,
+                  String phoneNumber,
+                  String email,
+                  PersonStatus status) {
+        this.id = id;
+        this.firstName = firstName;
+        this.subName = subName;
+        this.middleName = middleName;
+        this.birthDate = birthDate;
+        this.phoneNumber = phoneNumber;
+        this.email = email;
+        this.status = status;
     }
 
     public String getFirstName() {
@@ -28,35 +76,82 @@ public class Person {
     }
 
     public String getLastName() {
-        return lastName;
+        return subName;
     }
 
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
+    public void setLastName(String subName) {
+        this.subName = subName;
     }
 
     public UUID getId() {
         return id;
     }
 
-    public List<BankAccount> getBankAccounts() {
-        return new ArrayList<>(bankAccounts);
+    public String getSubName() {
+        return subName;
     }
 
-    public void addBankAccount(BankAccount bankAccount) {
-        bankAccounts.add(bankAccount);
+    public void setSubName(String subName) {
+        this.subName = subName;
+    }
+
+    public String getMiddleName() {
+        return middleName;
+    }
+
+    public void setMiddleName(String middleName) {
+        this.middleName = middleName;
+    }
+
+    public LocalDate getBirthDate() {
+        return birthDate;
+    }
+
+    public void setBirthDate(LocalDate birthDate) {
+        this.birthDate = birthDate;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public PersonStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(PersonStatus status) {
+        this.status = status;
     }
 
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         Person person = (Person) o;
-        return Objects.equals(id, person.id) && Objects.equals(firstName, person.firstName) && Objects.equals(lastName, person.lastName) && Objects.equals(bankAccounts, person.bankAccounts);
+        return Objects.equals(id, person.id) &&
+               Objects.equals(firstName, person.firstName) &&
+                Objects.equals(subName, person.subName) &&
+                Objects.equals(middleName, person.middleName) &&
+                Objects.equals(birthDate, person.birthDate) &&
+                Objects.equals(phoneNumber, person.phoneNumber) &&
+                Objects.equals(email, person.email) &&
+                Objects.equals(status, person.status);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, firstName, lastName, bankAccounts);
+        return Objects.hash(id, firstName, subName, middleName, birthDate, phoneNumber, email, status);
     }
 
     @Override
@@ -64,8 +159,12 @@ public class Person {
         return "Person{" +
                 "id=" + id +
                 ", firstName='" + firstName + '\'' +
-                ", lastName='" + lastName + '\'' +
-                ", bankAccounts=" + bankAccounts +
+                ", subName='" + subName + '\'' +
+                ", middleName='" + middleName + '\'' +
+                ", birthDate=" + birthDate +
+                ", phoneNumber='" + phoneNumber + '\'' +
+                ", email='" + email + '\'' +
+                ", status='" + status + '\'' +
                 '}';
     }
 }

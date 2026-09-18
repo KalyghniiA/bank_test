@@ -43,6 +43,15 @@ public class Transaction {
         this.relatedAccountId = Optional.ofNullable(relatedAccountId).orElseThrow(() -> new TransactionParamsException("Не передано значение relatedAccountId"));
     }
 
+    public Transaction(UUID id, UUID accountId, TransactionType type, BigDecimal amount, LocalDateTime timeStamp, UUID relatedAccountId) {
+        this.transactionId = id;
+        this.accountId = accountId;
+        this.type = type;
+        this.amount = amount;
+        this.timeStamp = timeStamp;
+        this.relatedAccountId = relatedAccountId;
+    }
+
     public UUID getTransactionId() {
         return transactionId;
     }
