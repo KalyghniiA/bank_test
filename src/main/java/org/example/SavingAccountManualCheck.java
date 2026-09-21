@@ -3,10 +3,7 @@ package org.example;
 import org.example.model.SavingAccount;
 
 import java.math.BigDecimal;
-import java.time.Clock;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneOffset;
+import java.time.*;
 import java.util.UUID;
 
 /**
@@ -30,7 +27,7 @@ public class SavingAccountManualCheck {
     }
 
     private static SavingAccount newAccountCreatedAtStart(BigDecimal balance, int withdrawLimit) {
-        return new SavingAccount(UUID.randomUUID(), UUID.randomUUID(), balance, withdrawLimit, START_DATE);
+        return new SavingAccount(UUID.randomUUID(), UUID.randomUUID(), balance, withdrawLimit, START_DATE.atStartOfDay());
     }
 
     private static void scenario1_lessThanMonth() {

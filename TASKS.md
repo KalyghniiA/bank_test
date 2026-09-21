@@ -62,11 +62,43 @@
 
 ---
 
+## Sprint 3 — Bank v3 (переход на JDBC/PostgreSQL)
+
+## BANK-5: Базовый JDBC-репозиторий счетов
+Описание: CRUD поверх PostgreSQL через `BankAccountRepository` (save/get/delete), схема `schema.sql` (Class Table Inheritance для saving/checking-деталей), подключение через `ConnectionService`, docker-compose с Postgres.
+Критерии приёмки:
+- `save`/`get` корректно обрабатывают SQLState-коды (23505/23503/23502) осмысленными исключениями.
+- `get()` восстанавливает верный подтип счёта (`BankAccount`/`SavingAccount`/`CheckingAccount`) по типу из `bank_account_type`.
+- Везде `PreparedStatement` с параметрами, без конкатенации значений в текст запроса.
+Статус: готово, прошло ревью.
+
+## BANK-13: Фильтрованное чтение счетов
+Описание: `getByPersonId(UUID)` и `getByType(AccountType)` в `BankAccountRepository` вместо неограниченного `getAll()`; `getAll()` кидает `UnsupportedOperationException`.
+Критерии приёмки:
+- Маппинг строки `ResultSet` в `BankAccount`/`SavingAccount`/`CheckingAccount` вынесен в один переиспользуемый метод и используется и в `get()`, и в обоих новых методах — без повторения `switch`.
+- Оба метода фильтруют на уровне SQL, а не вычитывают всю таблицу и фильтруют в Java.
+
+## BANK-14: Soft delete счёта через статус
+Описание: `delete(UUID id)` в `BankAccountRepository` переводит счёт в статус `DELETE` (`UPDATE`), вместо физического `DELETE FROM bank_account`.
+Критерии приёмки:
+- Счёт со статусом `DELETE` не удаляется из таблицы физически, но перестаёт быть доступен для обычных операций.
+- Отдельный метод жёсткого удаления не заводится — soft delete покрывает сценарий полностью.
+
+## BANK-15: Persist изменений счёта (update) + отвязка начисления процентов
+Описание: добавить `update(ID id, T item)` в `Repository<ID, T>`, реализовать в `BankAccountRepository` (обновление `balance`/`status` в `bank_account`, а для `SavingAccount` — ещё `withdraw_limit`/`date_last_accrual` в `saving_account_details`). Подключить вызовы `update()` в конце `transfer()`/`deposit()`/`withdraw()` в `BankAccountService`. Убрать вызовы `InterestAccrualService.accrueIfDue(...)` из этих трёх методов (сам метод `accrueInterestIfDue()` в `SavingAccount` и класс `InterestAccrualService` не трогать — понадобятся в BANK-16).
+Критерии приёмки:
+- После `transfer`/`deposit`/`withdraw` новый баланс/статус виден при повторном `get()` из БД, а не только в памяти процесса.
+- Обновление баланса и запись `Transaction` в рамках одной операции либо применяются оба, либо ни один (реальная DB-транзакция на одном `Connection`, `commit`/`rollback`).
+- `deposit()`/`withdraw()`/`transfer()` больше не вызывают `InterestAccrualService`.
+
+---
+
 ## Backlog (не в текущем спринте)
-- BANK-5: SQL-персистентность (JDBC), транзакции, индексы.
 - BANK-6: REST API поверх сервиса переводов.
 - BANK-7: Миграция на Spring Boot.
 - BANK-8: JUnit — после того как тема пройдена по роадмапу, написать тесты на BANK-1–BANK-4 (успешные и негативные сценарии).
+- BANK-16: Сервис начисления процентов по таймеру, отдельным контейнером (не нагружая основной сервис) — находит по `saving_account_details.date_last_accrual` счета, которым пора начислить проценты, вызывает `InterestAccrualService.accrueIfDue()`, сохраняет через `update()` и пишет `Transaction` нового типа (добавить `INTEREST_ACCRUAL` в `TransactionType` и в `transaction_type`).
+- BANK-17: Блокировка на уровне БД при конкурентном доступе к счёту (`SELECT ... FOR UPDATE` либо optimistic locking через `version`) — заменяет in-memory `ReentrantLock` в `BankAccount`, который не защищает от гонок между независимыми вызовами `get()` (два разных объекта, два разных лока), особенно критично при появлении BANK-16 как отдельного процесса.
 
 ---
 Статус по каждой задаче обновляется по ходу работы. При сдаче задачи — присылай код или диф, ревью без готовых решений (если явно не попросишь).
