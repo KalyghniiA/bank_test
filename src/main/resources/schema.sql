@@ -61,6 +61,14 @@ create table checking_account_details (
     foreign key (account_id) references bank_account(id)
 );
 
+create table credentials (
+    id uuid primary key,
+    person_id uuid references person(id) unique not null,
+    login varchar(100) unique not null,
+    password_hash bytea not null,
+    salt bytea not null,
+    iterations int not null default 600000
+);
 
 
 ALTER TABLE bank_account ADD FOREIGN KEY (type) REFERENCES bank_account_type (id) DEFERRABLE INITIALLY IMMEDIATE;
