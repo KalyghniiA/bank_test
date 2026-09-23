@@ -46,14 +46,14 @@ public class BankAccountService {
                 BankAccount newAccountFrom = getNewAcc(newBalanceFrom, accountFrom);
                 bankAccountRepository.update(accountFrom, newAccountFrom, conn);
 
-                Transaction transactionFrom = new Transaction(fromId, TransactionType.TRANSFER_IN, amount, toId);
+                Transaction transactionFrom = new Transaction(fromId, TransactionType.TRANSFER_OUT, amount, toId);
                 transactionRepository.save(transactionFrom.getTransactionId(), transactionFrom, conn);
 
                 BigDecimal newBalanceTo = accountTo.getBalance().add(amount);
                 BankAccount newAccountTo = getNewAcc(newBalanceTo, accountTo);
                 bankAccountRepository.update(accountTo, newAccountTo, conn);
 
-                Transaction transactionTo = new Transaction(toId, TransactionType.TRANSFER_OUT, amount, fromId);
+                Transaction transactionTo = new Transaction(toId, TransactionType.TRANSFER_IN, amount, fromId);
                 transactionRepository.save(transactionTo.getTransactionId(), transactionTo, conn);
                 conn.commit();
             } catch (SQLException e){

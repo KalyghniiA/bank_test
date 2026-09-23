@@ -53,7 +53,7 @@ public class BankPersonRepository implements Repository<UUID, Person> {
             }
             ps.setObject(8, statusId);
 
-            ps.execute();
+            ps.executeUpdate();
         }
     }
 
