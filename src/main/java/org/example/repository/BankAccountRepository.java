@@ -86,83 +86,81 @@ public class BankAccountRepository implements Repository<UUID, BankAccount> {
     }
 
     @Override
-    public void update(BankAccount oldItem, BankAccount newItem, Connection conn) throws SQLTransactionException, SQLException{
+    public void update(BankAccount oldItem, BankAccount newItem, Connection conn) throws SQLTransactionException, SQLException {
+        String sqlSelect =
+                """
+                select * from bank_account
+                full join saving_account_details on bank_account.id = saving_account_details.account_id
+                full join checking_account_details on bank_account.id = checking_account_details.account_id
+                where id = ? for update;
+                """;
 
-            String sqlSelect =
-                    """
-                    select * from bank_account
-                    full join saving_account_details on bank_account.id = saving_account_details.account_id
-                    full join checking_account_details on bank_account.id = checking_account_details.account_id
-                    where id = ? for update;
-                    """;
-
-                try (PreparedStatement ps = conn.prepareStatement(sqlSelect)) {
-                    ps.setObject(1, oldItem.getId());
-                    ResultSet rs = ps.executeQuery();
-                    BankAccount oldAccForDB = null;
-                    while(rs.next()) {
-                        oldAccForDB = mapping(rs);
-                    }
-                    if (!oldItem.equals(oldAccForDB)) throw new SQLTransactionException("Данные уже были изменены, попробуйте снова");
+            try (PreparedStatement ps = conn.prepareStatement(sqlSelect)) {
+                ps.setObject(1, oldItem.getId());
+                ResultSet rs = ps.executeQuery();
+                BankAccount oldAccForDB = null;
+                while(rs.next()) {
+                    oldAccForDB = mapping(rs);
                 }
+                if (!oldItem.equals(oldAccForDB)) throw new SQLTransactionException("Данные уже были изменены, попробуйте снова");
+            }
 
-                String sql = """
-                                update bank_account set type = ?,
-                                                        person_id = ?,
-                                                        balance = ?,
-                                                        status = ?
-                                where id = ?;
-                                """;
+            String sql = """
+                            update bank_account set type = ?,
+                                                    person_id = ?,
+                                                    balance = ?,
+                                                    status = ?
+                            where id = ?;
+                            """;
 
-                int typeId = Dictionaries.typeAccountDictionary.entrySet().stream().
-                        filter(elem -> elem.getValue().equals(newItem.getAccountType().getMessage()))
-                        .map(Map.Entry::getKey)
-                        .findFirst()
-                        .orElseThrow(() -> new RepositoryParamException("Передан неизвестный тип аккаунта"));
-                int statusId = Dictionaries.
-                        statusAccountDictionary.entrySet().stream()
-                        .filter(elem -> elem.getValue().equals(newItem.getStatus().getMessage()))
-                        .map(Map.Entry::getKey)
-                        .findFirst()
-                        .orElseThrow(() -> new RepositoryParamException("Передан неизвестный статус аккаунта"));
+            int typeId = Dictionaries.typeAccountDictionary.entrySet().stream().
+                    filter(elem -> elem.getValue().equals(newItem.getAccountType().getMessage()))
+                    .map(Map.Entry::getKey)
+                    .findFirst()
+                    .orElseThrow(() -> new RepositoryParamException("Передан неизвестный тип аккаунта"));
+            int statusId = Dictionaries.
+                    statusAccountDictionary.entrySet().stream()
+                    .filter(elem -> elem.getValue().equals(newItem.getStatus().getMessage()))
+                    .map(Map.Entry::getKey)
+                    .findFirst()
+                    .orElseThrow(() -> new RepositoryParamException("Передан неизвестный статус аккаунта"));
 
-                try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                    ps.setInt(1,typeId);
-                    ps.setObject(2, newItem.getUserId());
-                    ps.setBigDecimal(3, newItem.getBalance());
-                    ps.setInt(4, statusId);
-                    ps.setObject(5, newItem.getId());
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setInt(1,typeId);
+                ps.setObject(2, newItem.getUserId());
+                ps.setBigDecimal(3, newItem.getBalance());
+                ps.setInt(4, statusId);
+                ps.setObject(5, newItem.getId());
 
-                    ps.executeUpdate();
-                }
-                switch (newItem.getAccountType()) {
-                    case CHECKING -> {
-                        String sqlUpdate = "update checking_account_details set overdraft_limit =  ? where account_id = ?;";
+                ps.executeUpdate();
+            }
+            switch (newItem.getAccountType()) {
+                case CHECKING -> {
+                    String sqlUpdate = "update checking_account_details set overdraft_limit =  ? where account_id = ?;";
 
-                        try (PreparedStatement psCheck = conn.prepareStatement(sqlUpdate)) {
-                            psCheck.setObject(1, ((CheckingAccount) newItem).getOverdraftLimit());
-                            psCheck.setObject(2, newItem.getId());
-                            psCheck.executeUpdate();
-                        }
-                    }
-                    case SAVING -> {
-                        String sqlUpdate = """
-                                update saving_account_details set withdraw_limit = ?,
-                                                                  max_withdraw_limit = ?,
-                                                                  date_last_accrual = ?
-                                where account_id = ?;
-                                """;
-                        try (PreparedStatement psSaving = conn.prepareStatement(sqlUpdate)) {
-                            psSaving.setObject(1, ((SavingAccount) newItem).getWithdrawLimit());
-                            psSaving.setObject(2, ((SavingAccount) newItem).getMaxWithdrawalLimit());
-                            psSaving.setTimestamp(3, Timestamp.valueOf(((SavingAccount) newItem).getDateLastAccrual()));
-                            psSaving.setObject(4, newItem.getId());
-                            psSaving.executeUpdate();
-                        }
+                    try (PreparedStatement psCheck = conn.prepareStatement(sqlUpdate)) {
+                        psCheck.setObject(1, ((CheckingAccount) newItem).getOverdraftLimit());
+                        psCheck.setObject(2, newItem.getId());
+                        psCheck.executeUpdate();
                     }
                 }
-        }
-
+                case SAVING -> {
+                    String sqlUpdate = """
+                            update saving_account_details set withdraw_limit = ?,
+                                                              max_withdraw_limit = ?,
+                                                              date_last_accrual = ?
+                            where account_id = ?;
+                            """;
+                    try (PreparedStatement psSaving = conn.prepareStatement(sqlUpdate)) {
+                        psSaving.setObject(1, ((SavingAccount) newItem).getWithdrawLimit());
+                        psSaving.setObject(2, ((SavingAccount) newItem).getMaxWithdrawalLimit());
+                        psSaving.setTimestamp(3, Timestamp.valueOf(((SavingAccount) newItem).getDateLastAccrual()));
+                        psSaving.setObject(4, newItem.getId());
+                        psSaving.executeUpdate();
+                    }
+                }
+            }
+    }
 
 
     public List<BankAccount> getByAccountType(AccountType accountType, Connection conn) throws SQLException {
