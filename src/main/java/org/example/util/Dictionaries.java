@@ -1,5 +1,8 @@
 package org.example.util;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -7,6 +10,7 @@ import java.sql.Statement;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Dictionaries {
+    private final static Logger logger = LoggerFactory.getLogger(Dictionaries.class);
     public final static ConcurrentHashMap<Integer, String> statusAccountDictionary = new ConcurrentHashMap<>();
     public final static ConcurrentHashMap<Integer, String> typeAccountDictionary = new ConcurrentHashMap<>();
     public final static ConcurrentHashMap<Integer, String> typeTransactionDictionary = new ConcurrentHashMap<>();
@@ -52,6 +56,12 @@ public class Dictionaries {
             }
 
         } catch (SQLException e) {
+            switch (e.getSQLState()) {
+                case "42703" -> logger.error("Один из параметров словарей не верен", e);
+                case "42P01" -> logger.error("Один из словарей отсутствует в базе", e);
+                default -> logger.error("Ошибка загрузки словарей", e);
+            }
+
             throw new RuntimeException(e);
         }
     }
