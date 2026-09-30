@@ -1,6 +1,7 @@
 package org.example.model;
 
 import org.example.exceptions.BalanceLimitException;
+import org.example.exceptions.BalanceNegativeException;
 import org.example.util.AccountType;
 import org.example.util.Constant;
 import org.example.util.AccountStatus;
@@ -134,6 +135,7 @@ public class SavingAccount extends BankAccount implements InterestBearingAccount
 
     @Override
     public void setBalance(BigDecimal amount) {
+        if (amount.compareTo(BigDecimal.ZERO) < 0) throw new BalanceNegativeException("Баланс не может быть отрицательным");
         if (this.balance.compareTo(amount) > 0) {
             if (withdrawLimit > 0) {
                 --withdrawLimit;
@@ -145,8 +147,8 @@ public class SavingAccount extends BankAccount implements InterestBearingAccount
     }
 
     @Override
-    public boolean checkBalanceLimit(BigDecimal amount) {
-        return withdrawLimit <= 0 || balance.compareTo(amount) < 0;
+    public boolean canWithdraw(BigDecimal amount) {
+        return withdrawLimit > 0 && balance.compareTo(amount) >= 0;
     }
 
     @Override

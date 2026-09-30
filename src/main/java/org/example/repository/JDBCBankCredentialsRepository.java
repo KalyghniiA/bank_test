@@ -1,9 +1,10 @@
 package org.example.repository;
 
+import org.example.exceptions.RepositoryException;
 import org.example.exceptions.SQLTransactionException;
 import org.example.model.Credentials;
+import org.example.util.transaction_manager.ConnectionHolder;
 
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -11,11 +12,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-public class BankCredentialsRepository implements Repository<UUID, Credentials> {
+public class JDBCBankCredentialsRepository implements CredentialsRepository<UUID, Credentials> {
     @Override
-    public void save(UUID uuid, Credentials item, Connection connection) throws SQLException {
+    public void save(UUID uuid, Credentials item) {
         String sql = "insert into credentials (id, person_id, login, password_hash, salt, iterations) values (?,?,?,?,?,?);";
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+        try (PreparedStatement ps = ConnectionHolder.get().prepareStatement(sql)) {
             ps.setObject(1, uuid);
             ps.setObject(2, item.personId());
             ps.setString(3, item.login());
@@ -23,18 +24,20 @@ public class BankCredentialsRepository implements Repository<UUID, Credentials> 
             ps.setObject(5, item.salt());
             ps.setInt(6, item.iterations());
             ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RepositoryException("Произошла ошибка базы", e);
         }
     }
 
     @Override
-    public void delete(UUID uuid, Connection connection) throws SQLException {
+    public void delete(UUID uuid) {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
-    public Optional<Credentials> get(UUID uuid, Connection connection) throws SQLException {
+    public Optional<Credentials> get(UUID uuid) {
         String sql = "select * from credentials where id = ?;";
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+        try (PreparedStatement ps = ConnectionHolder.get().prepareStatement(sql)) {
             ps.setObject(1, uuid);
             ResultSet rs = ps.executeQuery();
             Credentials cred = null;
@@ -43,12 +46,15 @@ public class BankCredentialsRepository implements Repository<UUID, Credentials> 
             }
 
             return Optional.ofNullable(cred);
+        } catch (SQLException e) {
+            throw new RepositoryException("Произошла ошибка базы", e);
         }
     }
 
-    public Optional<Credentials> getByPersonId(UUID personId, Connection connection) throws SQLException {
+    @Override
+    public Optional<Credentials> getByPersonId(UUID personId) {
         String sql = "select * from credentials where person_id = ?;";
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+        try (PreparedStatement ps = ConnectionHolder.get().prepareStatement(sql)) {
             ps.setObject(1, personId);
             ResultSet rs = ps.executeQuery();
             Credentials cred = null;
@@ -57,12 +63,16 @@ public class BankCredentialsRepository implements Repository<UUID, Credentials> 
             }
 
             return Optional.ofNullable(cred);
+        } catch (SQLException e) {
+            throw new RepositoryException("Произошла ошибка базы", e);
         }
     }
 
-    public Optional<Credentials> getByLogin(String login, Connection connection) throws SQLException {
+
+    @Override
+    public Optional<Credentials> getByLogin(String login) {
         String sql = "select * from credentials where login = ?;";
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+        try (PreparedStatement ps = ConnectionHolder.get().prepareStatement(sql)) {
             ps.setObject(1, login);
             ResultSet rs = ps.executeQuery();
             Credentials cred = null;
@@ -70,19 +80,23 @@ public class BankCredentialsRepository implements Repository<UUID, Credentials> 
                 cred = mapping(rs);
             }
             return Optional.ofNullable(cred);
+        } catch (SQLException e) {
+            throw new RepositoryException("Произошла ошибка базы", e);
         }
     }
 
     @Override
-    public void update(Credentials oldItem, Credentials newItem, Connection connection) throws SQLException, SQLTransactionException {
+    public void update(Credentials oldItem, Credentials newItem) {
         String sqlSelect = "select * from credentials where id = ?;";
-        try (PreparedStatement ps = connection.prepareStatement(sqlSelect)) {
+        try (PreparedStatement ps = ConnectionHolder.get().prepareStatement(sqlSelect)) {
             ps.setObject(1, oldItem.id());
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
                 Credentials cred = mapping(rs);
                 if (!oldItem.equals(cred)) throw new SQLTransactionException("ДАнные уже были изменены");
             }
+        } catch (SQLException e) {
+            throw new RepositoryException("Произошла ошибка базы", e);
         }
 
         String sql = """
@@ -92,7 +106,7 @@ public class BankCredentialsRepository implements Repository<UUID, Credentials> 
                                            iterations = ?
                     where id = ?;
                     """;
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+        try (PreparedStatement ps = ConnectionHolder.get().prepareStatement(sql)) {
 
 
             ps.setString(1, newItem.login());
@@ -102,11 +116,13 @@ public class BankCredentialsRepository implements Repository<UUID, Credentials> 
             ps.setObject(5, newItem.id());
 
             ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RepositoryException("Произошла ошибка базы", e);
         }
     }
 
     @Override
-    public List<Credentials> getAll(Connection connection) throws SQLException {
+    public List<Credentials> getAll() {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 

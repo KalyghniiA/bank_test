@@ -65,7 +65,7 @@
 ## Sprint 3 — Bank v3 (переход на JDBC/PostgreSQL)
 
 ## BANK-5: Базовый JDBC-репозиторий счетов
-Описание: CRUD поверх PostgreSQL через `BankAccountRepository` (save/get/delete), схема `schema.sql` (Class Table Inheritance для saving/checking-деталей), подключение через `ConnectionService`, docker-compose с Postgres.
+Описание: CRUD поверх PostgreSQL через `JDBCBankAccountRepository` (save/get/delete), схема `schema.sql` (Class Table Inheritance для saving/checking-деталей), подключение через `ConnectionService`, docker-compose с Postgres.
 Критерии приёмки:
 - `save`/`get` корректно обрабатывают SQLState-коды (23505/23503/23502) осмысленными исключениями.
 - `get()` восстанавливает верный подтип счёта (`BankAccount`/`SavingAccount`/`CheckingAccount`) по типу из `bank_account_type`.
@@ -73,19 +73,19 @@
 Статус: готово, прошло ревью.
 
 ## BANK-13: Фильтрованное чтение счетов
-Описание: `getByPersonId(UUID)` и `getByType(AccountType)` в `BankAccountRepository` вместо неограниченного `getAll()`; `getAll()` кидает `UnsupportedOperationException`.
+Описание: `getByPersonId(UUID)` и `getByType(AccountType)` в `JDBCBankAccountRepository` вместо неограниченного `getAll()`; `getAll()` кидает `UnsupportedOperationException`.
 Критерии приёмки:
 - Маппинг строки `ResultSet` в `BankAccount`/`SavingAccount`/`CheckingAccount` вынесен в один переиспользуемый метод и используется и в `get()`, и в обоих новых методах — без повторения `switch`.
 - Оба метода фильтруют на уровне SQL, а не вычитывают всю таблицу и фильтруют в Java.
 
 ## BANK-14: Soft delete счёта через статус
-Описание: `delete(UUID id)` в `BankAccountRepository` переводит счёт в статус `DELETE` (`UPDATE`), вместо физического `DELETE FROM bank_account`.
+Описание: `delete(UUID id)` в `JDBCBankAccountRepository` переводит счёт в статус `DELETE` (`UPDATE`), вместо физического `DELETE FROM bank_account`.
 Критерии приёмки:
 - Счёт со статусом `DELETE` не удаляется из таблицы физически, но перестаёт быть доступен для обычных операций.
 - Отдельный метод жёсткого удаления не заводится — soft delete покрывает сценарий полностью.
 
 ## BANK-15: Persist изменений счёта (update) + отвязка начисления процентов
-Описание: добавить `update(ID id, T item)` в `Repository<ID, T>`, реализовать в `BankAccountRepository` (обновление `balance`/`status` в `bank_account`, а для `SavingAccount` — ещё `withdraw_limit`/`date_last_accrual` в `saving_account_details`). Подключить вызовы `update()` в конце `transfer()`/`deposit()`/`withdraw()` в `BankAccountService`. Убрать вызовы `InterestAccrualService.accrueIfDue(...)` из этих трёх методов (сам метод `accrueInterestIfDue()` в `SavingAccount` и класс `InterestAccrualService` не трогать — понадобятся в BANK-16).
+Описание: добавить `update(ID id, T item)` в `Repository<ID, T>`, реализовать в `JDBCBankAccountRepository` (обновление `balance`/`status` в `bank_account`, а для `SavingAccount` — ещё `withdraw_limit`/`date_last_accrual` в `saving_account_details`). Подключить вызовы `update()` в конце `transfer()`/`deposit()`/`withdraw()` в `BankAccountService`. Убрать вызовы `InterestAccrualService.accrueIfDue(...)` из этих трёх методов (сам метод `accrueInterestIfDue()` в `SavingAccount` и класс `InterestAccrualService` не трогать — понадобятся в BANK-16).
 Критерии приёмки:
 - После `transfer`/`deposit`/`withdraw` новый баланс/статус виден при повторном `get()` из БД, а не только в памяти процесса.
 - Обновление баланса и запись `Transaction` в рамках одной операции либо применяются оба, либо ни один (реальная DB-транзакция на одном `Connection`, `commit`/`rollback`).
@@ -96,7 +96,7 @@
 ## Sprint 4 — Bank v4 (аутентификация)
 
 ## BANK-18: Хеширование паролей и таблица credentials
-Описание: таблица `credentials` (person_id, login, password_hash, salt, iterations), `PasswordService` (PBKDF2-HMAC-SHA256, `SecureRandom`-соль ≥16 байт, итерации хранятся в самой записи), `BankCredentialsRepository` (save/get по id/getByPersonId/getByLogin/update), модель `Credentials`.
+Описание: таблица `credentials` (person_id, login, password_hash, salt, iterations), `PasswordService` (PBKDF2-HMAC-SHA256, `SecureRandom`-соль ≥16 байт, итерации хранятся в самой записи), `JDBCBankCredentialsRepository` (save/get по id/getByPersonId/getByLogin/update), модель `Credentials`.
 Критерии приёмки:
 - Пароль хешируется с уникальной случайной солью на каждую регистрацию, итерации не захардкожены константой в коде, а хранятся в строке.
 - Сравнение хешей при логине выполняется константным по времени методом (`MessageDigest.isEqual`), а не `Arrays.equals`.

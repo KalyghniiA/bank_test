@@ -1,22 +1,21 @@
 package org.example.repository;
 
-import org.example.exceptions.RepositoryItemExistsException;
+import org.example.exceptions.RepositoryException;
 import org.example.exceptions.RepositoryParamException;
 import org.example.model.Transaction;
-import org.example.util.ConnectionService;
 import org.example.util.Dictionaries;
 import org.example.util.TransactionType;
+import org.example.util.transaction_manager.ConnectionHolder;
 
 import java.math.BigDecimal;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
-public class TransactionRepository implements Repository<UUID, Transaction> {
+public class JDBCTransactionRepository implements Repository<UUID, Transaction> {
 
     @Override
-    public void save(UUID transactionId, Transaction item, Connection conn) throws SQLException {
+    public void save(UUID transactionId, Transaction item) {
 
         String sql = """
                 insert into "transaction"\s
@@ -30,7 +29,7 @@ public class TransactionRepository implements Repository<UUID, Transaction> {
                 .findFirst()
                 .orElseThrow(() -> new RepositoryParamException("Передан неизвестный тип транзакции"));
 
-        try ( PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = ConnectionHolder.get().prepareStatement(sql)) {
             ps.setObject(1, item.getTransactionId());
             ps.setObject(2, item.getAccountId());
             ps.setInt(3, typeId);
@@ -42,28 +41,22 @@ public class TransactionRepository implements Repository<UUID, Transaction> {
             }
 
             ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RepositoryException("Произошла ошибка базы", e);
         }
-//        } catch (SQLException e) {
-//            switch (e.getSQLState()) {
-//                case "23502" -> throw new RepositoryParamException("Один из обязательных параметров пустой");
-//                case "23505" -> throw new RepositoryParamException("Такой ключ уже есть в базе");
-//                default -> throw new RuntimeException("Другая ошибка базы");
-//            }
-//        }
-
     }
 
     @Override
-    public void delete(UUID uuid, Connection conn) throws SQLException {
+    public void delete(UUID uuid) {
         throw new UnsupportedOperationException("Транзакции нельзя удалить");
     }
 
     @Override
-    public Optional<Transaction> get(UUID uuid, Connection conn) throws SQLException {
+    public Optional<Transaction> get(UUID uuid) {
         String sql = """
                 select * from "transaction" where id = ?;
                 """;
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = ConnectionHolder.get().prepareStatement(sql)) {
             ps.setObject(1, uuid);
             ResultSet rs = ps.executeQuery();
             Transaction transaction = null;
@@ -72,29 +65,25 @@ public class TransactionRepository implements Repository<UUID, Transaction> {
             }
 
             return Optional.ofNullable(transaction);
+        } catch (SQLException e) {
+            throw new RepositoryException("Произошла ошибка базы", e);
         }
-//        } catch (SQLException e) {
-//            switch (e.getSQLState()) {
-//                case "23503" -> throw new RepositoryParamException("Данного транзакции нет в базе");
-//                default -> throw new RuntimeException("Другая ошибка базы", e);
-//            }
-//        }
     }
 
     @Override
-    public void update(Transaction oldItem, Transaction newItem, Connection connection) {
+    public void update(Transaction oldItem, Transaction newItem) {
         throw new UnsupportedOperationException("Транзакции нельзя обновлять");
     }
 
     @Override
-    public List<Transaction> getAll(Connection connection) throws SQLException {
+    public List<Transaction> getAll() {
         throw new UnsupportedOperationException("Данная операции не поддерживается, используйте методы с сужением");
     }
 
-    public List<Transaction> getByAccountId(UUID accountId, Connection conn) throws SQLException {
+    public List<Transaction> getByAccountId(UUID accountId) {
         List<Transaction> result = new ArrayList<>();
         String sql = "select * from \"transaction\" where account_id = ?;";
-        try (PreparedStatement st = conn.prepareStatement(sql)) {
+        try (PreparedStatement st = ConnectionHolder.get().prepareStatement(sql)) {
             st.setObject(1, accountId);
             ResultSet rs = st.executeQuery();
 
@@ -104,16 +93,12 @@ public class TransactionRepository implements Repository<UUID, Transaction> {
             }
 
             return result;
+        } catch (SQLException e) {
+            throw new RepositoryException("Произошла ошибка базы", e);
         }
-//        } catch (SQLException e) {
-//            switch (e.getSQLState()) {
-//                case "23503" -> throw new RepositoryParamException("У данного счета не было транзакций, либо данный аккаунт не существует");
-//                default ->  throw new RuntimeException("Другая ошибка базы", e);
-//            }
-//        }
     }
 
-    public List<Transaction> getByType(TransactionType type, Connection conn) throws SQLException {
+    public List<Transaction> getByType(TransactionType type) {
         List<Transaction> result = new ArrayList<>();
         int transactionTypeId = Dictionaries.typeTransactionDictionary.entrySet().stream()
                 .filter(elem -> elem.getValue().equals(type.getMessage()))
@@ -122,7 +107,7 @@ public class TransactionRepository implements Repository<UUID, Transaction> {
                 .orElseThrow(() -> new RepositoryParamException("Передан неизвестный тип транзакции"));
 
         String sql = "select * from \"transaction\" where type = ?;";
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = ConnectionHolder.get().prepareStatement(sql)) {
             ps.setObject(1, transactionTypeId);
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
@@ -131,13 +116,12 @@ public class TransactionRepository implements Repository<UUID, Transaction> {
             }
 
             return result;
+        } catch (SQLException e) {
+            throw new RepositoryException("Произошла ошибка базы", e);
         }
-//        } catch (SQLException e) {
-//            throw new RuntimeException("Другая ошибка базы", e);
-//        }
     }
 
-    public List<Transaction> getByAccountIdAndType(UUID accountId, TransactionType type, Connection conn) throws SQLException {
+    public List<Transaction> getByAccountIdAndType(UUID accountId, TransactionType type) {
         List<Transaction> result = new ArrayList<>();
         int transactionTypeId = Dictionaries.typeTransactionDictionary.entrySet().stream()
                 .filter(elem -> elem.getValue().equals(type.getMessage()))
@@ -146,7 +130,7 @@ public class TransactionRepository implements Repository<UUID, Transaction> {
                 .orElseThrow(() -> new RepositoryParamException("Передан неизвестный тип транзакции"));
 
         String sql = "select * from \"transaction\" where account_id = ? and type = ?;";
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = ConnectionHolder.get().prepareStatement(sql)) {
             ps.setObject(1, accountId);
             ps.setObject(2, transactionTypeId);
 
@@ -157,13 +141,9 @@ public class TransactionRepository implements Repository<UUID, Transaction> {
             }
 
             return result;
+        } catch (SQLException e) {
+            throw new RepositoryException("Произошла ошибка базы", e);
         }
-//        } catch (SQLException e) {
-//            switch (e.getSQLState()) {
-//                case "23503" -> throw new RepositoryParamException("У данного счета не было транзакций, либо данный аккаунт не существует");
-//                default ->  throw new RuntimeException("Другая ошибка базы", e);
-//            }
-//        }
     }
 
 
