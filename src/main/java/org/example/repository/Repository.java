@@ -6,13 +6,13 @@ import java.util.List;
 import java.util.Optional;
 
 public interface Repository<ID, T> {
-    public void save(ID id, T item, Connection connection) throws SQLException;
+    public void save(ID id, T item);
 
-    public void delete(ID id, Connection connection) throws SQLException;
+    public void delete(ID id);
 
-    public Optional<T> get(ID id, Connection connection) throws SQLException;
+    public Optional<T> get(ID id);
 
-    public void update(T oldItem, T newItem, Connection connection) throws SQLException;
+    public void update(T oldItem, T newItem);
 
-    public List<T> getAll(Connection connection) throws SQLException;
+    public List<T> getAll();
 }

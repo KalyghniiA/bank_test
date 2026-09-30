@@ -1,16 +1,15 @@
 package org.example.repository;
 
-import org.example.exceptions.DataAccountException;
-import org.example.exceptions.RepositoryItemExistsException;
 import org.example.exceptions.RepositoryParamException;
+import org.example.exceptions.RepositoryException;
 import org.example.exceptions.SQLTransactionException;
 import org.example.model.BankAccount;
 import org.example.model.CheckingAccount;
 import org.example.model.SavingAccount;
 import org.example.util.AccountType;
-import org.example.util.ConnectionService;
 import org.example.util.Dictionaries;
 import org.example.util.AccountStatus;
+import org.example.util.transaction_manager.ConnectionHolder;
 
 
 import java.math.BigDecimal;
@@ -18,10 +17,10 @@ import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.*;
 
-public class BankAccountRepository implements Repository<UUID, BankAccount> {
+public class JDBCBankAccountRepository implements Repository<UUID, BankAccount> {
 
     @Override
-    public void save(UUID id, BankAccount item, Connection conn) throws SQLException {
+    public void save(UUID id, BankAccount item) {
         String sql = """
                 insert into bank_account(id, type, person_id, balance, status)
                     values (?,
@@ -31,7 +30,7 @@ public class BankAccountRepository implements Repository<UUID, BankAccount> {
                             (select id from bank_account_status where name = ?)
                             )
                 """;
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = ConnectionHolder.get().prepareStatement(sql)) {
             ps.setObject(1, id);
             ps.setString(2, item.getAccountType().getMessage());
             ps.setObject(3, item.getUserId());
@@ -40,24 +39,28 @@ public class BankAccountRepository implements Repository<UUID, BankAccount> {
 
             ps.executeUpdate();
 
+        } catch (SQLException e) {
+            throw new RepositoryException("Произошла ошибка базы", e);
         }
 
     }
 
     @Override
-    public void delete(UUID id, Connection conn) throws SQLException {
+    public void delete(UUID id) {
         String sql = """
                 update bank_account set status = (select id from bank_account_status where name = 'DELETE') where id = ?;
         """;
 
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = ConnectionHolder.get().prepareStatement(sql)) {
             ps.setObject(1, id);
             ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RepositoryException("Произошла ошибка базы", e);
         }
     }
 
     @Override
-    public Optional<BankAccount> get(UUID id, Connection conn) throws SQLException {
+    public Optional<BankAccount> get(UUID id) {
         String sql = """
             
                 select * from bank_account
@@ -65,7 +68,7 @@ public class BankAccountRepository implements Repository<UUID, BankAccount> {
                 full join checking_account_details on bank_account.id = checking_account_details.account_id
             where id = ?;
             """;
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = ConnectionHolder.get().prepareStatement(sql)) {
 
             ps.setObject(1, id);
             ResultSet rs = ps.executeQuery();
@@ -76,17 +79,19 @@ public class BankAccountRepository implements Repository<UUID, BankAccount> {
             }
 
             return Optional.ofNullable(item);
+        } catch (SQLException e) {
+            throw new RepositoryException("Произошла ошибка базы", e);
         }
 
     }
 
     @Override
-    public  List<BankAccount> getAll(Connection connection) {
+    public  List<BankAccount> getAll() {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
-    public void update(BankAccount oldItem, BankAccount newItem, Connection conn) throws SQLTransactionException, SQLException {
+    public void update(BankAccount oldItem, BankAccount newItem) {
         String sqlSelect =
                 """
                 select * from bank_account
@@ -94,7 +99,7 @@ public class BankAccountRepository implements Repository<UUID, BankAccount> {
                 full join checking_account_details on bank_account.id = checking_account_details.account_id
                 where id = ? for update;
                 """;
-
+        Connection conn = ConnectionHolder.get();
             try (PreparedStatement ps = conn.prepareStatement(sqlSelect)) {
                 ps.setObject(1, oldItem.getId());
                 ResultSet rs = ps.executeQuery();
@@ -103,9 +108,11 @@ public class BankAccountRepository implements Repository<UUID, BankAccount> {
                     oldAccForDB = mapping(rs);
                 }
                 if (!oldItem.equals(oldAccForDB)) throw new SQLTransactionException("Данные уже были изменены, попробуйте снова");
+            } catch (SQLException e) {
+                throw new RepositoryException("Произошла ошибка базы", e);
             }
 
-            String sql = """
+        String sql = """
                             update bank_account set type = ?,
                                                     person_id = ?,
                                                     balance = ?,
@@ -133,8 +140,10 @@ public class BankAccountRepository implements Repository<UUID, BankAccount> {
                 ps.setObject(5, newItem.getId());
 
                 ps.executeUpdate();
+            } catch (SQLException e) {
+                throw new RepositoryException("Произошла ошибка базы", e);
             }
-            switch (newItem.getAccountType()) {
+        switch (newItem.getAccountType()) {
                 case CHECKING -> {
                     String sqlUpdate = "update checking_account_details set overdraft_limit =  ? where account_id = ?;";
 
@@ -142,6 +151,8 @@ public class BankAccountRepository implements Repository<UUID, BankAccount> {
                         psCheck.setObject(1, ((CheckingAccount) newItem).getOverdraftLimit());
                         psCheck.setObject(2, newItem.getId());
                         psCheck.executeUpdate();
+                    } catch (SQLException e) {
+                        throw new RepositoryException("Произошла ошибка базы", e);
                     }
                 }
                 case SAVING -> {
@@ -157,13 +168,15 @@ public class BankAccountRepository implements Repository<UUID, BankAccount> {
                         psSaving.setTimestamp(3, Timestamp.valueOf(((SavingAccount) newItem).getDateLastAccrual()));
                         psSaving.setObject(4, newItem.getId());
                         psSaving.executeUpdate();
+                    } catch (SQLException e) {
+                        throw new RepositoryException("Произошла ошибка базы", e);
                     }
                 }
             }
     }
 
 
-    public List<BankAccount> getByAccountType(AccountType accountType, Connection conn) throws SQLException {
+    public List<BankAccount> getByAccountType(AccountType accountType) {
         List<BankAccount> result = new ArrayList<>();
         String sql = """
                 select * from bank_account
@@ -172,7 +185,7 @@ public class BankAccountRepository implements Repository<UUID, BankAccount> {
                 where type = ?;
                 """;
 
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = ConnectionHolder.get().prepareStatement(sql)) {
             Integer typeId = Dictionaries.typeAccountDictionary.entrySet()
                     .stream()
                     .filter(elem -> elem.getValue().equals(accountType.getMessage()))
@@ -188,9 +201,11 @@ public class BankAccountRepository implements Repository<UUID, BankAccount> {
 
             return result;
 
+        } catch (SQLException e) {
+            throw new RepositoryException("Произошла ошибка базы", e);
         }
     }
-    public List<BankAccount> getByUserId(UUID userId, Connection conn) throws SQLException {
+    public List<BankAccount> getByUserId(UUID userId) {
         List<BankAccount> result = new ArrayList<>();
         String sql = """
                 select * from bank_account
@@ -200,17 +215,19 @@ public class BankAccountRepository implements Repository<UUID, BankAccount> {
                 where person_id
                 = ?;
                 """;
-                try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = ConnectionHolder.get().prepareStatement(sql)) {
             ps.setObject(1, userId);
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
                 result.add(mapping(rs));
             }
             return  result;
+        } catch (SQLException e) {
+            throw new RepositoryException("Произошла ошибка базы", e);
         }
     }
 
-    public List<BankAccount> getByStatus(AccountStatus status, Connection conn) throws SQLException {
+    public List<BankAccount> getByStatus(AccountStatus status) {
         List<BankAccount> result = new ArrayList<>();
         String sql = """
                 select * from bank_account
@@ -223,13 +240,15 @@ public class BankAccountRepository implements Repository<UUID, BankAccount> {
                 .map(Map.Entry::getKey)
                 .findFirst()
                 .orElseThrow(() -> new RepositoryParamException("Передан неизвестный статус, проверьте точность"));
-        try ( PreparedStatement ps = conn.prepareStatement(sql)) {
+        try ( PreparedStatement ps = ConnectionHolder.get().prepareStatement(sql)) {
             ps.setObject(1, statusIndex);
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
                 result.add(mapping(rs));
             }
             return  result;
+        } catch (SQLException e) {
+            throw new RepositoryException("Произошла ошибка базы", e);
         }
     }
 

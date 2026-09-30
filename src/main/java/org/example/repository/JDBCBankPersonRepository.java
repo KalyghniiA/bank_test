@@ -2,10 +2,12 @@ package org.example.repository;
 
 
 import org.example.exceptions.RepositoryParamException;
+import org.example.exceptions.RepositoryException;
 import org.example.exceptions.SQLTransactionException;
 import org.example.model.Person;
 import org.example.util.Dictionaries;
 import org.example.util.PersonStatus;
+import org.example.util.transaction_manager.ConnectionHolder;
 
 import java.sql.*;
 import java.time.LocalDate;
@@ -15,11 +17,11 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class BankPersonRepository implements Repository<UUID, Person> {
+public class JDBCBankPersonRepository implements Repository<UUID, Person> {
     private final ConcurrentHashMap<UUID, Person> repository = new ConcurrentHashMap<>();
 
     @Override
-    public void save(UUID uuid, Person item, Connection conn) throws SQLException {
+    public void save(UUID uuid, Person item) {
         String sql = """
                 insert into person
                     (id, first_name, surname, middle_name, birth_date, phone_number, email, status)
@@ -31,7 +33,7 @@ public class BankPersonRepository implements Repository<UUID, Person> {
                 .findFirst()
                 .orElseThrow(() -> new RepositoryParamException("Данный тип аккаунта не известен"));
 
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = ConnectionHolder.get().prepareStatement(sql)) {
             ps.setObject(1, uuid);
             ps.setString(2, item.getFirstName());
             ps.setString(3, item.getLastName());
@@ -54,11 +56,13 @@ public class BankPersonRepository implements Repository<UUID, Person> {
             ps.setObject(8, statusId);
 
             ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RepositoryException("Произошла ошибка базы", e);
         }
     }
 
     @Override
-    public void delete(UUID uuid, Connection conn) throws SQLException {
+    public void delete(UUID uuid) {
         int statusDeleteId = Dictionaries.statusPersonDictionary.entrySet().stream()
                 .filter(elem -> elem.getValue().equals("BLOCKED"))
                 .map(Map.Entry::getKey)
@@ -69,18 +73,20 @@ public class BankPersonRepository implements Repository<UUID, Person> {
                 update person set status = ? where id = ?;\s
                 """;
 
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = ConnectionHolder.get().prepareStatement(sql)) {
             ps.setObject(1, statusDeleteId);
             ps.setObject(2, uuid);
             ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RepositoryException("Произошла ошибка базы", e);
         }
 
     }
 
     @Override
-    public Optional<Person> get(UUID uuid, Connection conn) throws SQLException {
+    public Optional<Person> get(UUID uuid) {
         String sql = "select * from person where id = ?;";
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = ConnectionHolder.get().prepareStatement(sql)) {
             ps.setObject(1, uuid);
             ResultSet rs = ps.executeQuery();
             Person person = null;
@@ -89,14 +95,16 @@ public class BankPersonRepository implements Repository<UUID, Person> {
             }
 
             return Optional.ofNullable(person);
+        } catch (SQLException e) {
+            throw new RepositoryException("Произошла ошибка базы", e);
         }
     }
 
     @Override
-    public void update(Person oldItem, Person newItem, Connection conn) throws SQLTransactionException, SQLException {
+    public void update(Person oldItem, Person newItem) {
 
             String sqlSelect = "select * from person where id = ?;";
-            try ( PreparedStatement ps = conn.prepareStatement(sqlSelect)) {
+            try ( PreparedStatement ps = ConnectionHolder.get().prepareStatement(sqlSelect)) {
                 Person oldPersonToDB = null;
                 ps.setObject(1, oldItem.getId());
                 ResultSet rs = ps.executeQuery();
@@ -123,7 +131,7 @@ public class BankPersonRepository implements Repository<UUID, Person> {
                         .findFirst()
                         .orElseThrow(() -> new RepositoryParamException("Передан неизвестный статус"));
 
-                try (PreparedStatement psUpdate = conn.prepareStatement(sqlUpdate)) {
+                try (PreparedStatement psUpdate = ConnectionHolder.get().prepareStatement(sqlUpdate)) {
                     psUpdate.setString(1, newItem.getFirstName());
                     psUpdate.setString(2, newItem.getLastName());
                     if (newItem.getMiddleName() == null) {
@@ -149,12 +157,14 @@ public class BankPersonRepository implements Repository<UUID, Person> {
                 }
 
 
+            } catch (SQLException e) {
+                throw new RepositoryException("Произошла ошибка базы", e);
             }
 
     }
 
     @Override
-    public List<Person> getAll(Connection conn) {
+    public List<Person> getAll() {
         throw new UnsupportedOperationException("Данный метод недоступен, попробуйте методы с сужением");
     }
 

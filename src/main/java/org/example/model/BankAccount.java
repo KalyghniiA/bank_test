@@ -28,7 +28,7 @@ public class BankAccount {
     }
 
     public BankAccount(UUID userId, BigDecimal balance) {
-        if (balance.doubleValue() < 0) throw new BalanceNegativeException("Balance cannot be negative");
+        if (balance.compareTo(BigDecimal.ZERO) < 0) throw new BalanceNegativeException("Balance cannot be negative");
         this.id = UUID.randomUUID();
         this.userId = userId;
         this.balance = balance;
@@ -37,7 +37,7 @@ public class BankAccount {
     }
 
     public BankAccount(UUID id, UUID userId, BigDecimal balance) {
-        if (balance.doubleValue() < 0) throw new BalanceNegativeException("Balance cannot be negative");
+        if (balance.compareTo(BigDecimal.ZERO) < 0) throw new BalanceNegativeException("Balance cannot be negative");
         this.id = id;
         this.userId = userId;
         this.balance = balance;
@@ -46,7 +46,7 @@ public class BankAccount {
     }
 
     public BankAccount(UUID id, UUID userId, BigDecimal balance, AccountType accountType) {
-        if (balance.doubleValue() < 0) throw new BalanceNegativeException("Balance cannot be negative");
+        if (balance.compareTo(BigDecimal.ZERO) < 0) throw new BalanceNegativeException("Balance cannot be negative");
         this.id = id;
         this.userId = userId;
         this.balance = balance;
@@ -55,7 +55,7 @@ public class BankAccount {
     }
 
     public BankAccount(UUID id, UUID userId, BigDecimal balance, AccountType accountType, AccountStatus status) {
-        if (balance.doubleValue() < 0) throw new BalanceNegativeException("Balance cannot be negative");
+        if (balance.compareTo(BigDecimal.ZERO) < 0) throw new BalanceNegativeException("Balance cannot be negative");
         this.id = id;
         this.userId = userId;
         this.balance = balance;
@@ -76,7 +76,7 @@ public class BankAccount {
     }
 
     public void setBalance(BigDecimal amount) {
-        if (amount.doubleValue() < 0) throw new BalanceNegativeException("Баланс не может быть отрицательным");
+        if (amount.compareTo(BigDecimal.ZERO) < 0) throw new BalanceNegativeException("Баланс не может быть отрицательным");
         this.balance = amount;
     }
 
@@ -101,8 +101,8 @@ public class BankAccount {
         lock.unlock();
     }
 
-    public boolean checkBalanceLimit(BigDecimal amount) {
-        return balance.compareTo(amount) < 0;
+    public boolean canWithdraw(BigDecimal amount) {
+        return balance.compareTo(amount) >= 0;
     }
 
     @Override

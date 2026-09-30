@@ -7,14 +7,12 @@ import org.example.model.SavingAccount;
 import org.example.model.Transaction;
 import org.example.repository.Repository;
 import org.example.util.AccountType;
-import org.example.util.ConnectionService;
 import org.example.util.TransactionType;
+import org.example.util.transaction_manager.TransactionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
-import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.UUID;
 
 
@@ -22,10 +20,12 @@ public class BankAccountService {
     private final static Logger logger = LoggerFactory.getLogger(BankAccountService.class);
     private final Repository<UUID, BankAccount> bankAccountRepository;
     private final Repository<UUID, Transaction> transactionRepository;
+    private final TransactionManager transactionManager;
 
-    public BankAccountService(Repository<UUID, BankAccount> bankAccountRepository, Repository<UUID, Transaction> transactionRepository) {
+    public BankAccountService(Repository<UUID, BankAccount> bankAccountRepository, Repository<UUID, Transaction> transactionRepository, TransactionManager transactionManager) {
         this.bankAccountRepository = bankAccountRepository;
         this.transactionRepository = transactionRepository;
+        this.transactionManager = transactionManager;
     }
 
     public void transfer(UUID fromId, UUID toId, BigDecimal amount)
@@ -45,52 +45,40 @@ public class BankAccountService {
             throw new DataAccountException("Нельзя переводить на один и тот же счет");
         }
 
-        try (Connection conn = ConnectionService.getConnection()) {
-            try {
-                conn.setAutoCommit(false);
+        try {
+            transactionManager.runInTransaction(() -> {
+                BankAccount accountFrom = bankAccountRepository.get(fromId).orElseThrow(() -> new EmptyAccountException(fromId.toString()));;
+                BankAccount accountTo = bankAccountRepository.get(toId).orElseThrow(() -> new EmptyAccountException(toId.toString()));
 
-                BankAccount accountFrom = bankAccountRepository.get(fromId, conn).orElseThrow(() -> new EmptyAccountException(fromId.toString()));;
-                BankAccount accountTo = bankAccountRepository.get(toId, conn).orElseThrow(() -> new EmptyAccountException(toId.toString()));
-
-                if (accountFrom.checkBalanceLimit(amount)) {
+                if (!accountFrom.canWithdraw(amount)) {
                     logger.warn("Превышение возможной суммы списания");
                     throw new BalanceLimitException("Сумма списания больше баланса счета списания");
                 }
 
                 BigDecimal newBalanceFrom = accountFrom.getBalance().subtract(amount);
                 BankAccount newAccountFrom = getNewAcc(newBalanceFrom, accountFrom);
-                bankAccountRepository.update(accountFrom, newAccountFrom, conn);
+                bankAccountRepository.update(accountFrom, newAccountFrom);
 
                 Transaction transactionFrom = new Transaction(fromId, TransactionType.TRANSFER_OUT, amount, toId);
-                transactionRepository.save(transactionFrom.getTransactionId(), transactionFrom, conn);
+                transactionRepository.save(transactionFrom.getTransactionId(), transactionFrom);
 
                 BigDecimal newBalanceTo = accountTo.getBalance().add(amount);
                 BankAccount newAccountTo = getNewAcc(newBalanceTo, accountTo);
-                bankAccountRepository.update(accountTo, newAccountTo, conn);
+                bankAccountRepository.update(accountTo, newAccountTo);
 
                 Transaction transactionTo = new Transaction(toId, TransactionType.TRANSFER_IN, amount, fromId);
-                transactionRepository.save(transactionTo.getTransactionId(), transactionTo, conn);
-                conn.commit();
+                transactionRepository.save(transactionTo.getTransactionId(), transactionTo);
                 logger.info("Операция по переводу средств {} со счета {} на счет {} завершена", amount, fromId, toId);
-            } catch (SQLException e){
-                conn.rollback();
-                switch (e.getSQLState()) {
-                    case "23503": {
-                        logger.error("Передан не верный параметр", e);
-                        throw new RepositoryParamException("Один из параметров указан не верно");
-                    }
-                    default: {
-                        logger.error("Ошибка базы данных", e);
-                        throw new RuntimeException("Другая ошибка базы", e);
-                    }
-                }
-            } catch (SQLTransactionException e) {
-                conn.rollback();
-                logger.error("Ошибка транзакции", e);
-                throw e;
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
+            });
+        }  catch (RepositoryException e){
+            logger.error("Произошла ошибка работы с данными: {}", e.getCause().getMessage(), e);
+            throw e;
+        } catch (TransactionManagerSQLException e) {
+            logger.error("Произошла ошибка менеджера транзакции", e);
+            throw e;
+        } catch (SQLTransactionException e) {
+            logger.error("Ошибка транзакции", e);
+            throw e;
         }
 
     }
@@ -105,36 +93,26 @@ public class BankAccountService {
             logger.warn("Передано отрицательное значение суммы. Сумма: {}, счет: {}", amount, accountId);
             throw new InvalidAmountException("Значение не может быть отрицательным или равно нулю");
         }
-        try (Connection conn = ConnectionService.getConnection()) {
-            try  {
-                conn.setAutoCommit(false);
-                BankAccount oldAcc = bankAccountRepository.get(accountId, conn).orElseThrow(() -> new EmptyAccountException(accountId.toString()));
+
+        try {
+            transactionManager.runInTransaction(() -> {
+                BankAccount oldAcc = bankAccountRepository.get(accountId).orElseThrow(() -> new EmptyAccountException(accountId.toString()));
                 BigDecimal newBalance = oldAcc.getBalance().add(amount);
                 BankAccount newAcc = getNewAcc(newBalance, oldAcc);
-                bankAccountRepository.update(oldAcc, newAcc, conn);
+                bankAccountRepository.update(oldAcc, newAcc);
                 Transaction transaction = new Transaction(accountId, TransactionType.DEPOSIT, amount);
-                transactionRepository.save(transaction.getTransactionId(), transaction, conn);
-                conn.commit();
+                transactionRepository.save(transaction.getTransactionId(), transaction);
                 logger.info("Денежные средства {} зачислены на счет {}", amount, accountId);
-            } catch (SQLException e) {
-                conn.rollback();
-                switch (e.getSQLState()) {
-                    case "23503":
-                        logger.error("Неверно указанный параметр", e);
-                        throw new RepositoryParamException("Какой то из параметров указан с ошибкой(возможно id пользователя)");
-                    case "23502":
-                        logger.error("Один из параметров пустой", e);
-                        throw new RepositoryParamException("Один из обязательных параметров пустой");
-                    default:
-                        logger.error("Ошибка работы с базой", e);
-                        throw new RuntimeException("Другая ошибка базы", e);
-                }
-            } catch (SQLTransactionException e) {
-                conn.rollback();
-                throw e;
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
+            });
+        } catch (RepositoryException e){
+            logger.error("Произошла ошибка работы с данными: {}", e.getCause().getMessage(), e);
+            throw e;
+        } catch (TransactionManagerSQLException e) {
+            logger.error("Произошла ошибка менеджера транзакции", e);
+            throw e;
+        } catch (SQLTransactionException e) {
+            logger.error("Ошибка транзакции", e);
+            throw e;
         }
     }
 
@@ -150,42 +128,31 @@ public class BankAccountService {
             throw new InvalidAmountException("Значение не может быть отрицательным или равно нулю");
         }
 
-        try (Connection conn = ConnectionService.getConnection()) {
-            try {
-                conn.setAutoCommit(false);
-                BankAccount oldAcc =  bankAccountRepository.get(accountId, conn).orElseThrow(() -> new EmptyAccountException(accountId.toString()));
-                if (oldAcc.checkBalanceLimit(amount)) {
+        try {
+            transactionManager.runInTransaction(() -> {
+                BankAccount oldAcc =  bankAccountRepository.get(accountId).orElseThrow(() -> new EmptyAccountException(accountId.toString()));
+                if (!oldAcc.canWithdraw(amount)) {
                     logger.warn("Сумма {} превышает баланс", amount);
                     throw new BalanceLimitException("Баланс меньше суммы списания");
                 }
                 BigDecimal newBalance = oldAcc.getBalance().subtract(amount);
                 BankAccount newAcc = getNewAcc(newBalance, oldAcc);
 
-                bankAccountRepository.update(oldAcc, newAcc, conn);
+                bankAccountRepository.update(oldAcc, newAcc);
 
                 Transaction transaction = new Transaction(accountId, TransactionType.WITHDRAW, amount);
-                transactionRepository.save(transaction.getTransactionId(), transaction, conn);
-                conn.commit();
+                transactionRepository.save(transaction.getTransactionId(), transaction);
                 logger.info("Завершена операция списания {} со счета {}", amount, accountId);
-            } catch (SQLException e) {
-                conn.rollback();
-                switch (e.getSQLState()) {
-                    case "23503":
-                        logger.error("Неверно указанный параметр", e);
-                        throw new RepositoryParamException("Какой то из параметров указан с ошибкой(возможно id пользователя)");
-                    case "23502":
-                        logger.error("Один из параметров пустой", e);
-                        throw new RepositoryParamException("Один из обязательных параметров пустой");
-                    default:
-                        logger.error("Ошибка работы с базой", e);
-                        throw new RuntimeException("Другая ошибка базы", e);
-                }
-            } catch (SQLTransactionException e) {
-                conn.rollback();
-                throw e;
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
+            });
+        } catch (RepositoryException e){
+            logger.error("Произошла ошибка работы с данными: {}", e.getCause().getMessage(), e);
+            throw e;
+        } catch (TransactionManagerSQLException e) {
+            logger.error("Произошла ошибка менеджера транзакции", e);
+            throw e;
+        } catch (SQLTransactionException e) {
+            logger.error("Ошибка транзакции", e);
+            throw e;
         }
     }
 

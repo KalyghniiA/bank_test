@@ -7,6 +7,6 @@ public record AccountRequestDTO(
         UUID personId,
         BigDecimal balance,
         String type,
-        int maxWithdrawalLimit,
+        Integer maxWithdrawalLimit,
         String overdraftLimit) {
 }
