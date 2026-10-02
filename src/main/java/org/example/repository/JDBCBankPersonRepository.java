@@ -104,7 +104,7 @@ public class JDBCBankPersonRepository implements Repository<UUID, Person> {
     public void update(Person oldItem, Person newItem) {
 
             String sqlSelect = "select * from person where id = ?;";
-            try ( PreparedStatement ps = ConnectionHolder.get().prepareStatement(sqlSelect)) {
+            try (PreparedStatement ps = ConnectionHolder.get().prepareStatement(sqlSelect)) {
                 Person oldPersonToDB = null;
                 ps.setObject(1, oldItem.getId());
                 ResultSet rs = ps.executeQuery();

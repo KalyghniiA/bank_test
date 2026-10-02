@@ -116,9 +116,13 @@ public class SavingAccount extends BankAccount implements InterestBearingAccount
         return withdrawLimit;
     }
 
-    public int getMaxWithdrawalLimit() {return maxWithdrawalLimit;}
+    public int getMaxWithdrawalLimit() {
+        return maxWithdrawalLimit;
+    }
 
-    public LocalDateTime getDateLastAccrual() {return dateLastAccrual;}
+    public LocalDateTime getDateLastAccrual() {
+        return dateLastAccrual;
+    }
 
     @Override
     public void accrueInterestIfDue(Clock clock) {

@@ -62,7 +62,7 @@ public class JDBCBankAccountRepository implements Repository<UUID, BankAccount> 
     @Override
     public Optional<BankAccount> get(UUID id) {
         String sql = """
-            
+
                 select * from bank_account
                 full join saving_account_details on bank_account.id = saving_account_details.account_id
                 full join checking_account_details on bank_account.id = checking_account_details.account_id
@@ -104,7 +104,7 @@ public class JDBCBankAccountRepository implements Repository<UUID, BankAccount> 
                 ps.setObject(1, oldItem.getId());
                 ResultSet rs = ps.executeQuery();
                 BankAccount oldAccForDB = null;
-                while(rs.next()) {
+                while (rs.next()) {
                     oldAccForDB = mapping(rs);
                 }
                 if (!oldItem.equals(oldAccForDB)) throw new SQLTransactionException("Данные уже были изменены, попробуйте снова");
@@ -120,13 +120,13 @@ public class JDBCBankAccountRepository implements Repository<UUID, BankAccount> 
                             where id = ?;
                             """;
 
-            int typeId = Dictionaries.typeAccountDictionary.entrySet().stream().
-                    filter(elem -> elem.getValue().equals(newItem.getAccountType().getMessage()))
+            int typeId = Dictionaries.typeAccountDictionary.entrySet().stream()
+                    .filter(elem -> elem.getValue().equals(newItem.getAccountType().getMessage()))
                     .map(Map.Entry::getKey)
                     .findFirst()
                     .orElseThrow(() -> new RepositoryParamException("Передан неизвестный тип аккаунта"));
-            int statusId = Dictionaries.
-                    statusAccountDictionary.entrySet().stream()
+            int statusId = Dictionaries
+                    .statusAccountDictionary.entrySet().stream()
                     .filter(elem -> elem.getValue().equals(newItem.getStatus().getMessage()))
                     .map(Map.Entry::getKey)
                     .findFirst()
@@ -205,6 +205,7 @@ public class JDBCBankAccountRepository implements Repository<UUID, BankAccount> 
             throw new RepositoryException("Произошла ошибка базы", e);
         }
     }
+
     public List<BankAccount> getByUserId(UUID userId) {
         List<BankAccount> result = new ArrayList<>();
         String sql = """
@@ -240,7 +241,7 @@ public class JDBCBankAccountRepository implements Repository<UUID, BankAccount> 
                 .map(Map.Entry::getKey)
                 .findFirst()
                 .orElseThrow(() -> new RepositoryParamException("Передан неизвестный статус, проверьте точность"));
-        try ( PreparedStatement ps = ConnectionHolder.get().prepareStatement(sql)) {
+        try (PreparedStatement ps = ConnectionHolder.get().prepareStatement(sql)) {
             ps.setObject(1, statusIndex);
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {

@@ -12,20 +12,17 @@ import org.example.model.Credentials;
 import org.example.model.Person;
 import org.example.repository.*;
 
-import org.example.util.ConnectionService;
 import org.example.util.PasswordService;
 import org.example.util.transaction_manager.TransactionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.security.MessageDigest;
-import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.Optional;
 import java.util.UUID;
 
 public class PersonService {
-    private final static Logger logger = LoggerFactory.getLogger(PersonService.class);
+    private static final Logger logger = LoggerFactory.getLogger(PersonService.class);
     private final Repository<UUID, Person> bankPersonRepository;
     private final Repository<UUID, BankAccount> bankAccountRepository;
     private final Repository<UUID, Credentials> bankCredentialsRepository;
@@ -55,7 +52,7 @@ public class PersonService {
 
                 logger.info("Пользователь успешно зарегистрирован");
             });
-        } catch (RepositoryException e){
+        } catch (RepositoryException e) {
             logger.error("Произошла ошибка работы с данными: {}", e.getCause().getMessage(), e);
             throw e;
         } catch (TransactionManagerSQLException e) {
@@ -80,7 +77,7 @@ public class PersonService {
                 }
                 logger.info("Счет успешно зарегистрирован");
             });
-        } catch (RepositoryException e){
+        } catch (RepositoryException e) {
             logger.error("Произошла ошибка работы с данными: {}", e.getCause().getMessage(), e);
             throw e;
         } catch (TransactionManagerSQLException e) {
@@ -103,7 +100,7 @@ public class PersonService {
                 }
                 logger.info("Счет id {} успешно удален", accountId);
             });
-        } catch (RepositoryException e){
+        } catch (RepositoryException e) {
             logger.error("Произошла ошибка работы с данными: {}", e.getCause().getMessage(), e);
             throw e;
         } catch (TransactionManagerSQLException e) {
@@ -130,7 +127,7 @@ public class PersonService {
 
                 return bankPersonRepository.get(cred.personId()).orElseThrow(() -> new RepositoryItemExistsException("Пользователя нет в базе"));
             });
-        } catch (RepositoryException e){
+        } catch (RepositoryException e) {
             logger.error("Произошла ошибка работы с данными: {}", e.getCause().getMessage(), e);
             throw e;
         } catch (TransactionManagerSQLException e) {

@@ -17,7 +17,7 @@ import java.util.UUID;
 
 
 public class BankAccountService {
-    private final static Logger logger = LoggerFactory.getLogger(BankAccountService.class);
+    private static final Logger logger = LoggerFactory.getLogger(BankAccountService.class);
     private final Repository<UUID, BankAccount> bankAccountRepository;
     private final Repository<UUID, Transaction> transactionRepository;
     private final TransactionManager transactionManager;
@@ -70,7 +70,7 @@ public class BankAccountService {
                 transactionRepository.save(transactionTo.getTransactionId(), transactionTo);
                 logger.info("Операция по переводу средств {} со счета {} на счет {} завершена", amount, fromId, toId);
             });
-        }  catch (RepositoryException e){
+        } catch (RepositoryException e) {
             logger.error("Произошла ошибка работы с данными: {}", e.getCause().getMessage(), e);
             throw e;
         } catch (TransactionManagerSQLException e) {
@@ -104,7 +104,7 @@ public class BankAccountService {
                 transactionRepository.save(transaction.getTransactionId(), transaction);
                 logger.info("Денежные средства {} зачислены на счет {}", amount, accountId);
             });
-        } catch (RepositoryException e){
+        } catch (RepositoryException e) {
             logger.error("Произошла ошибка работы с данными: {}", e.getCause().getMessage(), e);
             throw e;
         } catch (TransactionManagerSQLException e) {
@@ -144,7 +144,7 @@ public class BankAccountService {
                 transactionRepository.save(transaction.getTransactionId(), transaction);
                 logger.info("Завершена операция списания {} со счета {}", amount, accountId);
             });
-        } catch (RepositoryException e){
+        } catch (RepositoryException e) {
             logger.error("Произошла ошибка работы с данными: {}", e.getCause().getMessage(), e);
             throw e;
         } catch (TransactionManagerSQLException e) {

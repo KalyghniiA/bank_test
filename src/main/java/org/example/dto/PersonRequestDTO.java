@@ -2,7 +2,7 @@ package org.example.dto;
 
 import java.time.LocalDate;
 
-public record PersonRequestDTO (
+public record PersonRequestDTO(
         String firstName,
         String subName,
         String middleName,
