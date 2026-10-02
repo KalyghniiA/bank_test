@@ -43,6 +43,36 @@ public class JDBCBankAccountRepository implements Repository<UUID, BankAccount> 
             throw new RepositoryException("Произошла ошибка базы", e);
         }
 
+        if (item.getAccountType().equals(AccountType.SAVING) && item instanceof SavingAccount savingAccount) {
+            String sqlSaving = """
+                    insert into saving_account_details (account_id, withdraw_limit, max_withdraw_limit, date_last_accrual) values (?, ?, ?, ?);
+                    """;
+            try (PreparedStatement ps = ConnectionHolder.get().prepareStatement(sqlSaving)) {
+                ps.setObject(1, id);
+                ps.setObject(2, savingAccount.getWithdrawLimit());
+                ps.setObject(3, savingAccount.getMaxWithdrawalLimit());
+                ps.setObject(4, savingAccount.getDateLastAccrual());
+
+                ps.executeUpdate();
+            } catch (SQLException e) {
+                throw new RepositoryException("Произошла ошибка базы", e);
+            }
+        }
+
+        if (item.getAccountType().equals(AccountType.CHECKING) && item instanceof CheckingAccount checkingAccount) {
+            String sqlChecking = """
+                        insert into checking_account_details (account_id, overdraft_limit) values (?, ?);
+                        """;
+            try (PreparedStatement ps = ConnectionHolder.get().prepareStatement(sqlChecking)) {
+                ps.setObject(1, id);
+                ps.setObject(2, checkingAccount.getOverdraftLimit());
+
+                ps.executeUpdate();
+            } catch (SQLException e) {
+                throw new RepositoryException("Произошла ошибка базы", e);
+            }
+        }
+
     }
 
     @Override

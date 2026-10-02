@@ -51,7 +51,7 @@ create table saving_account_details (
     account_id uuid primary key,
     withdraw_limit integer not null check(withdraw_limit >= 0),
     max_withdraw_limit integer not null check ( withdraw_limit <= max_withdraw_limit and max_withdraw_limit >= 0),
-    date_last_accrual timestamp,
+    date_last_accrual timestamp not null,
     foreign key(account_id) references bank_account(id)
 );
 

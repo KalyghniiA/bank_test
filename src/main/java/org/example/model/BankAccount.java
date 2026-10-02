@@ -22,7 +22,7 @@ public class BankAccount {
     public BankAccount(UUID userId) {
         this.id = UUID.randomUUID();
         this.userId = userId;
-        this.balance = new BigDecimal(0);
+        this.balance = BigDecimal.ZERO;
         this.accountType = AccountType.DEFAULT;
         this.status = AccountStatus.ACTIVE;
     }
