@@ -1,17 +1,23 @@
 package org.example.util.transaction_manager;
 
 import org.example.exceptions.TransactionManagerSQLException;
-import org.example.util.ConnectionService;
 
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.function.Supplier;
 
 public class JDBCTransactionManager implements TransactionManager {
+    private final DataSource ds;
+
+    public JDBCTransactionManager(DataSource ds) {
+        this.ds = ds;
+    }
+
     @Override
     public <T> T runInTransaction(Supplier<T> supplier) {
         try {
-            try (Connection conn = ConnectionService.getConnection()) {
+            try (Connection conn = ds.getConnection()) {
                 ConnectionHolder.set(conn);
                 try {
                     conn.setAutoCommit(false);
