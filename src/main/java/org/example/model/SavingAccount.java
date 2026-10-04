@@ -17,7 +17,9 @@ import java.util.UUID;
 public class SavingAccount extends BankAccount implements InterestBearingAccount {
     private int withdrawLimit;
     private final int maxWithdrawalLimit;
-    private LocalDateTime dateLastAccrual = LocalDateTime.now();
+    // PostgreSQL хранит timestamp с точностью до микросекунд: без усечения прочитанный из БД объект
+    // не равнялся бы исходному (на Linux now() возвращает наносекунды).
+    private LocalDateTime dateLastAccrual = LocalDateTime.now().truncatedTo(ChronoUnit.MICROS);
 
     public SavingAccount(UUID userId) {
         super(userId);
