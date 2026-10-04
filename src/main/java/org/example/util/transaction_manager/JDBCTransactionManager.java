@@ -28,7 +28,7 @@ public class JDBCTransactionManager implements TransactionManager {
 
                     return result;
                 } catch (Exception e) {
-                    conn.rollback();
+                    rollbackQuietly(conn, e);
                     throw e;
                 } finally {
                     ConnectionHolder.remove();
@@ -36,6 +36,18 @@ public class JDBCTransactionManager implements TransactionManager {
             }
         } catch (SQLException e) {
             throw new TransactionManagerSQLException("Произошла ошибка базы данных", e);
+        }
+    }
+
+    /**
+     * Ошибка отката не должна подменять исходную ошибку: иначе наружу уйдёт «Connection is closed»
+     * вместо настоящей причины (Hikari сам закрывает соединение после некоторых ошибок БД).
+     */
+    private static void rollbackQuietly(Connection conn, Exception original) {
+        try {
+            conn.rollback();
+        } catch (SQLException rollbackError) {
+            original.addSuppressed(rollbackError);
         }
     }
 
