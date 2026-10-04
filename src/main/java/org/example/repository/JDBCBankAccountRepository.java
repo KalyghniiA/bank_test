@@ -94,8 +94,8 @@ public class JDBCBankAccountRepository implements Repository<UUID, BankAccount> 
         String sql = """
 
                 select * from bank_account
-                full join saving_account_details on bank_account.id = saving_account_details.account_id
-                full join checking_account_details on bank_account.id = checking_account_details.account_id
+                left join saving_account_details on bank_account.id = saving_account_details.account_id
+                left join checking_account_details on bank_account.id = checking_account_details.account_id
             where id = ?;
             """;
         try (PreparedStatement ps = ConnectionHolder.get().prepareStatement(sql)) {
@@ -125,9 +125,9 @@ public class JDBCBankAccountRepository implements Repository<UUID, BankAccount> 
         String sqlSelect =
                 """
                 select * from bank_account
-                full join saving_account_details on bank_account.id = saving_account_details.account_id
-                full join checking_account_details on bank_account.id = checking_account_details.account_id
-                where id = ? for update;
+                left join saving_account_details on bank_account.id = saving_account_details.account_id
+                left join checking_account_details on bank_account.id = checking_account_details.account_id
+                where id = ? for update of bank_account;
                 """;
         Connection conn = ConnectionHolder.get();
             try (PreparedStatement ps = conn.prepareStatement(sqlSelect)) {
@@ -210,8 +210,8 @@ public class JDBCBankAccountRepository implements Repository<UUID, BankAccount> 
         List<BankAccount> result = new ArrayList<>();
         String sql = """
                 select * from bank_account
-                    full join saving_account_details on bank_account.id = saving_account_details.account_id
-                    full join checking_account_details on bank_account.id = checking_account_details.account_id
+                    left join saving_account_details on bank_account.id = saving_account_details.account_id
+                    left join checking_account_details on bank_account.id = checking_account_details.account_id
                 where type = ?;
                 """;
 
@@ -240,8 +240,8 @@ public class JDBCBankAccountRepository implements Repository<UUID, BankAccount> 
         List<BankAccount> result = new ArrayList<>();
         String sql = """
                 select * from bank_account
-                    full join saving_account_details on bank_account.id = saving_account_details.account_id
-                    full join
+                    left join saving_account_details on bank_account.id = saving_account_details.account_id
+                    left join
                 checking_account_details on bank_account.id = checking_account_details.account_id
                 where person_id
                 = ?;
@@ -262,8 +262,8 @@ public class JDBCBankAccountRepository implements Repository<UUID, BankAccount> 
         List<BankAccount> result = new ArrayList<>();
         String sql = """
                 select * from bank_account
-                            full join saving_account_details on bank_account.id = saving_account_details.account_id
-                           full join checking_account_details on bank_account.id = checking_account_details.account_id
+                            left join saving_account_details on bank_account.id = saving_account_details.account_id
+                           left join checking_account_details on bank_account.id = checking_account_details.account_id
                         where status = ?;
         """;
         Integer statusIndex = Dictionaries.statusAccountDictionary.entrySet().stream()
