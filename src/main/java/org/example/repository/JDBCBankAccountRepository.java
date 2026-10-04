@@ -21,6 +21,10 @@ public class JDBCBankAccountRepository implements Repository<UUID, BankAccount> 
 
     @Override
     public void save(UUID id, BankAccount item) {
+        // Тип счёта и класс объекта должны совпадать: иначе детали молча не сохранятся,
+        // а get/update потом восстановят счёт с пустыми лимитами.
+        checkTypeMatchesClass(item);
+
         String sql = """
                 insert into bank_account(id, type, person_id, balance, status)
                     values (?,
@@ -43,7 +47,7 @@ public class JDBCBankAccountRepository implements Repository<UUID, BankAccount> 
             throw new RepositoryException("Произошла ошибка базы", e);
         }
 
-        if (item.getAccountType().equals(AccountType.SAVING) && item instanceof SavingAccount savingAccount) {
+        if (item instanceof SavingAccount savingAccount) {
             String sqlSaving = """
                     insert into saving_account_details (account_id, withdraw_limit, max_withdraw_limit, date_last_accrual) values (?, ?, ?, ?);
                     """;
@@ -59,7 +63,7 @@ public class JDBCBankAccountRepository implements Repository<UUID, BankAccount> 
             }
         }
 
-        if (item.getAccountType().equals(AccountType.CHECKING) && item instanceof CheckingAccount checkingAccount) {
+        if (item instanceof CheckingAccount checkingAccount) {
             String sqlChecking = """
                         insert into checking_account_details (account_id, overdraft_limit) values (?, ?);
                         """;
@@ -73,6 +77,18 @@ public class JDBCBankAccountRepository implements Repository<UUID, BankAccount> 
             }
         }
 
+    }
+
+    private static void checkTypeMatchesClass(BankAccount item) {
+        boolean matches = switch (item.getAccountType()) {
+            case SAVING -> item instanceof SavingAccount;
+            case CHECKING -> item instanceof CheckingAccount;
+            case DEFAULT -> !(item instanceof SavingAccount) && !(item instanceof CheckingAccount);
+        };
+        if (!matches) {
+            throw new RepositoryParamException(String.format("Тип счёта %s не соответствует классу %s",
+                    item.getAccountType(), item.getClass().getSimpleName()));
+        }
     }
 
     @Override
@@ -92,7 +108,6 @@ public class JDBCBankAccountRepository implements Repository<UUID, BankAccount> 
     @Override
     public Optional<BankAccount> get(UUID id) {
         String sql = """
-
                 select * from bank_account
                 left join saving_account_details on bank_account.id = saving_account_details.account_id
                 left join checking_account_details on bank_account.id = checking_account_details.account_id
@@ -288,7 +303,7 @@ public class JDBCBankAccountRepository implements Repository<UUID, BankAccount> 
         UUID personId = UUID.fromString(rs.getString("person_id"));
         UUID accountId = UUID.fromString(rs.getString("id"));
         BigDecimal balance = rs.getBigDecimal("balance");
-        AccountStatus status = AccountStatus.fromString(rs.getString("status"));
+        AccountStatus status = AccountStatus.fromString(Dictionaries.statusAccountDictionary.get(rs.getInt("status")));
         switch (AccountType.fromString(Dictionaries.typeAccountDictionary.get(rs.getInt("type")))) {
             case AccountType.SAVING -> {
                 int withdrawLimit = rs.getInt("withdraw_limit");
