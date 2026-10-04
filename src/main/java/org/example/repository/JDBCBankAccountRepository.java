@@ -21,6 +21,10 @@ public class JDBCBankAccountRepository implements Repository<UUID, BankAccount> 
 
     @Override
     public void save(UUID id, BankAccount item) {
+        // Тип счёта и класс объекта должны совпадать: иначе детали молча не сохранятся,
+        // а get/update потом восстановят счёт с пустыми лимитами.
+        checkTypeMatchesClass(item);
+
         String sql = """
                 insert into bank_account(id, type, person_id, balance, status)
                     values (?,
@@ -43,6 +47,48 @@ public class JDBCBankAccountRepository implements Repository<UUID, BankAccount> 
             throw new RepositoryException("Произошла ошибка базы", e);
         }
 
+        if (item instanceof SavingAccount savingAccount) {
+            String sqlSaving = """
+                    insert into saving_account_details (account_id, withdraw_limit, max_withdraw_limit, date_last_accrual) values (?, ?, ?, ?);
+                    """;
+            try (PreparedStatement ps = ConnectionHolder.get().prepareStatement(sqlSaving)) {
+                ps.setObject(1, id);
+                ps.setObject(2, savingAccount.getWithdrawLimit());
+                ps.setObject(3, savingAccount.getMaxWithdrawalLimit());
+                ps.setObject(4, savingAccount.getDateLastAccrual());
+
+                ps.executeUpdate();
+            } catch (SQLException e) {
+                throw new RepositoryException("Произошла ошибка базы", e);
+            }
+        }
+
+        if (item instanceof CheckingAccount checkingAccount) {
+            String sqlChecking = """
+                        insert into checking_account_details (account_id, overdraft_limit) values (?, ?);
+                        """;
+            try (PreparedStatement ps = ConnectionHolder.get().prepareStatement(sqlChecking)) {
+                ps.setObject(1, id);
+                ps.setObject(2, checkingAccount.getOverdraftLimit());
+
+                ps.executeUpdate();
+            } catch (SQLException e) {
+                throw new RepositoryException("Произошла ошибка базы", e);
+            }
+        }
+
+    }
+
+    private static void checkTypeMatchesClass(BankAccount item) {
+        boolean matches = switch (item.getAccountType()) {
+            case SAVING -> item instanceof SavingAccount;
+            case CHECKING -> item instanceof CheckingAccount;
+            case DEFAULT -> !(item instanceof SavingAccount) && !(item instanceof CheckingAccount);
+        };
+        if (!matches) {
+            throw new RepositoryParamException(String.format("Тип счёта %s не соответствует классу %s",
+                    item.getAccountType(), item.getClass().getSimpleName()));
+        }
     }
 
     @Override
@@ -62,10 +108,9 @@ public class JDBCBankAccountRepository implements Repository<UUID, BankAccount> 
     @Override
     public Optional<BankAccount> get(UUID id) {
         String sql = """
-            
                 select * from bank_account
-                full join saving_account_details on bank_account.id = saving_account_details.account_id
-                full join checking_account_details on bank_account.id = checking_account_details.account_id
+                left join saving_account_details on bank_account.id = saving_account_details.account_id
+                left join checking_account_details on bank_account.id = checking_account_details.account_id
             where id = ?;
             """;
         try (PreparedStatement ps = ConnectionHolder.get().prepareStatement(sql)) {
@@ -95,16 +140,16 @@ public class JDBCBankAccountRepository implements Repository<UUID, BankAccount> 
         String sqlSelect =
                 """
                 select * from bank_account
-                full join saving_account_details on bank_account.id = saving_account_details.account_id
-                full join checking_account_details on bank_account.id = checking_account_details.account_id
-                where id = ? for update;
+                left join saving_account_details on bank_account.id = saving_account_details.account_id
+                left join checking_account_details on bank_account.id = checking_account_details.account_id
+                where id = ? for update of bank_account;
                 """;
         Connection conn = ConnectionHolder.get();
             try (PreparedStatement ps = conn.prepareStatement(sqlSelect)) {
                 ps.setObject(1, oldItem.getId());
                 ResultSet rs = ps.executeQuery();
                 BankAccount oldAccForDB = null;
-                while(rs.next()) {
+                while (rs.next()) {
                     oldAccForDB = mapping(rs);
                 }
                 if (!oldItem.equals(oldAccForDB)) throw new SQLTransactionException("Данные уже были изменены, попробуйте снова");
@@ -120,13 +165,13 @@ public class JDBCBankAccountRepository implements Repository<UUID, BankAccount> 
                             where id = ?;
                             """;
 
-            int typeId = Dictionaries.typeAccountDictionary.entrySet().stream().
-                    filter(elem -> elem.getValue().equals(newItem.getAccountType().getMessage()))
+            int typeId = Dictionaries.typeAccountDictionary.entrySet().stream()
+                    .filter(elem -> elem.getValue().equals(newItem.getAccountType().getMessage()))
                     .map(Map.Entry::getKey)
                     .findFirst()
                     .orElseThrow(() -> new RepositoryParamException("Передан неизвестный тип аккаунта"));
-            int statusId = Dictionaries.
-                    statusAccountDictionary.entrySet().stream()
+            int statusId = Dictionaries
+                    .statusAccountDictionary.entrySet().stream()
                     .filter(elem -> elem.getValue().equals(newItem.getStatus().getMessage()))
                     .map(Map.Entry::getKey)
                     .findFirst()
@@ -180,8 +225,8 @@ public class JDBCBankAccountRepository implements Repository<UUID, BankAccount> 
         List<BankAccount> result = new ArrayList<>();
         String sql = """
                 select * from bank_account
-                    full join saving_account_details on bank_account.id = saving_account_details.account_id
-                    full join checking_account_details on bank_account.id = checking_account_details.account_id
+                    left join saving_account_details on bank_account.id = saving_account_details.account_id
+                    left join checking_account_details on bank_account.id = checking_account_details.account_id
                 where type = ?;
                 """;
 
@@ -205,12 +250,13 @@ public class JDBCBankAccountRepository implements Repository<UUID, BankAccount> 
             throw new RepositoryException("Произошла ошибка базы", e);
         }
     }
+
     public List<BankAccount> getByUserId(UUID userId) {
         List<BankAccount> result = new ArrayList<>();
         String sql = """
                 select * from bank_account
-                    full join saving_account_details on bank_account.id = saving_account_details.account_id
-                    full join
+                    left join saving_account_details on bank_account.id = saving_account_details.account_id
+                    left join
                 checking_account_details on bank_account.id = checking_account_details.account_id
                 where person_id
                 = ?;
@@ -231,8 +277,8 @@ public class JDBCBankAccountRepository implements Repository<UUID, BankAccount> 
         List<BankAccount> result = new ArrayList<>();
         String sql = """
                 select * from bank_account
-                            full join saving_account_details on bank_account.id = saving_account_details.account_id
-                           full join checking_account_details on bank_account.id = checking_account_details.account_id
+                            left join saving_account_details on bank_account.id = saving_account_details.account_id
+                           left join checking_account_details on bank_account.id = checking_account_details.account_id
                         where status = ?;
         """;
         Integer statusIndex = Dictionaries.statusAccountDictionary.entrySet().stream()
@@ -240,7 +286,7 @@ public class JDBCBankAccountRepository implements Repository<UUID, BankAccount> 
                 .map(Map.Entry::getKey)
                 .findFirst()
                 .orElseThrow(() -> new RepositoryParamException("Передан неизвестный статус, проверьте точность"));
-        try ( PreparedStatement ps = ConnectionHolder.get().prepareStatement(sql)) {
+        try (PreparedStatement ps = ConnectionHolder.get().prepareStatement(sql)) {
             ps.setObject(1, statusIndex);
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
@@ -257,7 +303,7 @@ public class JDBCBankAccountRepository implements Repository<UUID, BankAccount> 
         UUID personId = UUID.fromString(rs.getString("person_id"));
         UUID accountId = UUID.fromString(rs.getString("id"));
         BigDecimal balance = rs.getBigDecimal("balance");
-        AccountStatus status = AccountStatus.fromString(rs.getString("status"));
+        AccountStatus status = AccountStatus.fromString(Dictionaries.statusAccountDictionary.get(rs.getInt("status")));
         switch (AccountType.fromString(Dictionaries.typeAccountDictionary.get(rs.getInt("type")))) {
             case AccountType.SAVING -> {
                 int withdrawLimit = rs.getInt("withdraw_limit");

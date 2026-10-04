@@ -3,6 +3,7 @@ package org.example.util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -10,18 +11,20 @@ import java.sql.Statement;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Dictionaries {
-    private final static Logger logger = LoggerFactory.getLogger(Dictionaries.class);
-    public final static ConcurrentHashMap<Integer, String> statusAccountDictionary = new ConcurrentHashMap<>();
-    public final static ConcurrentHashMap<Integer, String> typeAccountDictionary = new ConcurrentHashMap<>();
-    public final static ConcurrentHashMap<Integer, String> typeTransactionDictionary = new ConcurrentHashMap<>();
-    public final static ConcurrentHashMap<Integer, String> statusPersonDictionary = new ConcurrentHashMap<>();
+    private static final Logger logger = LoggerFactory.getLogger(Dictionaries.class);
+    public static final ConcurrentHashMap<Integer, String> statusAccountDictionary = new ConcurrentHashMap<>();
+    public static final ConcurrentHashMap<Integer, String> typeAccountDictionary = new ConcurrentHashMap<>();
+    public static final ConcurrentHashMap<Integer, String> typeTransactionDictionary = new ConcurrentHashMap<>();
+    public static final ConcurrentHashMap<Integer, String> statusPersonDictionary = new ConcurrentHashMap<>();
+    private final DataSource ds;
 
-    public static void loadDictionary() {
-        try (Connection conn = ConnectionService.getConnection(); Statement statement = conn.createStatement()) {
-            statusAccountDictionary.clear();
-            typeAccountDictionary.clear();
-            typeTransactionDictionary.clear();
-            statusPersonDictionary.clear();
+    public Dictionaries(DataSource ds) {
+        this.ds = ds;
+    }
+
+    public void loadDictionary() {
+        try (Connection conn = ds.getConnection(); Statement statement = conn.createStatement()) {
+            clearDictionary();
 
             ResultSet setTypeAccount = statement.executeQuery("select * from bank_account_type");
 
@@ -64,5 +67,12 @@ public class Dictionaries {
 
             throw new RuntimeException(e);
         }
+    }
+
+    void clearDictionary() {
+        statusAccountDictionary.clear();
+        typeAccountDictionary.clear();
+        typeTransactionDictionary.clear();
+        statusPersonDictionary.clear();
     }
 }

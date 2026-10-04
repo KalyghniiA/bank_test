@@ -40,7 +40,7 @@ public class  AccountMapper {
         }
     }
 
-    public static <T> BankAccount toNewBankAccount (BankAccount oldAcc, AccountField<T> param, T newValue) {
+    public static <T> BankAccount toNewBankAccount(BankAccount oldAcc, AccountField<T> param, T newValue) {
         return switch (oldAcc.getAccountType()) {
             case SAVING -> {
                yield new SavingAccount(
@@ -50,7 +50,7 @@ public class  AccountMapper {
                        ((SavingAccount)oldAcc).getWithdrawLimit(),
                        param.equals(AccountField.MAX_WITHDRAWAL_LIMIT) ? (Integer) newValue : ((SavingAccount) oldAcc).getMaxWithdrawalLimit(),
                        ((SavingAccount) oldAcc).getDateLastAccrual(),
-                       param.equals(AccountField.STATUS) ?(AccountStatus)  newValue : oldAcc.getStatus()
+                       param.equals(AccountField.STATUS) ? (AccountStatus) newValue : oldAcc.getStatus()
                );
             }
             case CHECKING -> {

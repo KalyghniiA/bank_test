@@ -126,7 +126,7 @@ public class JDBCBankCredentialsRepository implements CredentialsRepository<UUID
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
-    private Credentials mapping (ResultSet rs) throws SQLException {
+    private Credentials mapping(ResultSet rs) throws SQLException {
         UUID id = UUID.fromString(rs.getString("id"));
         UUID personId = UUID.fromString(rs.getString("person_id"));
         String login = rs.getString("login");

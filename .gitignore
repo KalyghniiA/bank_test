@@ -41,3 +41,6 @@ build/
 TASKS.md
 
 .env
+### Logs & build artifacts ###
+logs/
+dependency-reduced-pom.xml

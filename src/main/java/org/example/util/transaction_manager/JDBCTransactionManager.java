@@ -1,17 +1,23 @@
 package org.example.util.transaction_manager;
 
 import org.example.exceptions.TransactionManagerSQLException;
-import org.example.util.ConnectionService;
 
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.function.Supplier;
 
 public class JDBCTransactionManager implements TransactionManager {
+    private final DataSource ds;
+
+    public JDBCTransactionManager(DataSource ds) {
+        this.ds = ds;
+    }
+
     @Override
     public <T> T runInTransaction(Supplier<T> supplier) {
         try {
-            try (Connection conn = ConnectionService.getConnection()) {
+            try (Connection conn = ds.getConnection()) {
                 ConnectionHolder.set(conn);
                 try {
                     conn.setAutoCommit(false);
@@ -22,7 +28,7 @@ public class JDBCTransactionManager implements TransactionManager {
 
                     return result;
                 } catch (Exception e) {
-                    conn.rollback();
+                    rollbackQuietly(conn, e);
                     throw e;
                 } finally {
                     ConnectionHolder.remove();
@@ -30,6 +36,18 @@ public class JDBCTransactionManager implements TransactionManager {
             }
         } catch (SQLException e) {
             throw new TransactionManagerSQLException("Произошла ошибка базы данных", e);
+        }
+    }
+
+    /**
+     * Ошибка отката не должна подменять исходную ошибку: иначе наружу уйдёт «Connection is closed»
+     * вместо настоящей причины (Hikari сам закрывает соединение после некоторых ошибок БД).
+     */
+    private static void rollbackQuietly(Connection conn, Exception original) {
+        try {
+            conn.rollback();
+        } catch (SQLException rollbackError) {
+            original.addSuppressed(rollbackError);
         }
     }
 

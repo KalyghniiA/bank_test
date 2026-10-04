@@ -7,7 +7,7 @@ import org.example.util.PersonStatus;
 import java.util.UUID;
 
 public class PersonMapper {
-    public static Person toPerson (PersonRequestDTO dto) {
+    public static Person toPerson(PersonRequestDTO dto) {
         return new Person(
             dto.firstName(),
                 dto.subName(),

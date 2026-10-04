@@ -147,7 +147,7 @@ public class JDBCTransactionRepository implements Repository<UUID, Transaction> 
     }
 
 
-    private Transaction mapping (ResultSet rs) throws SQLException {
+    private Transaction mapping(ResultSet rs) throws SQLException {
         UUID id = UUID.fromString(rs.getString("id"));
         UUID accountId = UUID.fromString(rs.getString("account_id"));
         TransactionType type = TransactionType.fromString(Dictionaries.typeTransactionDictionary.get(rs.getInt("type")));

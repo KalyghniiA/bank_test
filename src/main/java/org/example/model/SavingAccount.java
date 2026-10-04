@@ -17,7 +17,9 @@ import java.util.UUID;
 public class SavingAccount extends BankAccount implements InterestBearingAccount {
     private int withdrawLimit;
     private final int maxWithdrawalLimit;
-    private LocalDateTime dateLastAccrual = LocalDateTime.now();
+    // PostgreSQL хранит timestamp с точностью до микросекунд: без усечения прочитанный из БД объект
+    // не равнялся бы исходному (на Linux now() возвращает наносекунды).
+    private LocalDateTime dateLastAccrual = LocalDateTime.now().truncatedTo(ChronoUnit.MICROS);
 
     public SavingAccount(UUID userId) {
         super(userId);
@@ -116,9 +118,13 @@ public class SavingAccount extends BankAccount implements InterestBearingAccount
         return withdrawLimit;
     }
 
-    public int getMaxWithdrawalLimit() {return maxWithdrawalLimit;}
+    public int getMaxWithdrawalLimit() {
+        return maxWithdrawalLimit;
+    }
 
-    public LocalDateTime getDateLastAccrual() {return dateLastAccrual;}
+    public LocalDateTime getDateLastAccrual() {
+        return dateLastAccrual;
+    }
 
     @Override
     public void accrueInterestIfDue(Clock clock) {
@@ -158,13 +164,7 @@ public class SavingAccount extends BankAccount implements InterestBearingAccount
         SavingAccount that = (SavingAccount) o;
         return getWithdrawLimit() == that.getWithdrawLimit() &&
                 maxWithdrawalLimit == that.maxWithdrawalLimit &&
-                Objects.equals(dateLastAccrual, that.dateLastAccrual) &&
-                Objects.equals(id, that.id) &&
-                Objects.equals(userId, that.userId) &&
-                Objects.equals(balance, that.balance) &&
-                Objects.equals(lock, that.lock) &&
-                accountType == that.accountType &&
-                status == that.status;
+                Objects.equals(dateLastAccrual, that.dateLastAccrual);
     }
 
     @Override
