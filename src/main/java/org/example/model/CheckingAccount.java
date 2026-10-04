@@ -76,17 +76,13 @@ public class CheckingAccount extends BankAccount {
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
         CheckingAccount that = (CheckingAccount) o;
-        return Objects.equals(getOverdraftLimit(), that.getOverdraftLimit()) &&
-                Objects.equals(id, that.id) &&
-                Objects.equals(userId, that.userId) &&
-                Objects.equals(balance, that.balance) &&
-                Objects.equals(lock, that.lock) &&
-                accountType == that.accountType &&
-                status == that.status;
+        return getOverdraftLimit().compareTo(that.getOverdraftLimit()) == 0;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), getOverdraftLimit());
+        return Objects.hash(super.hashCode(), getOverdraftLimit().stripTrailingZeros());
     }
+
+
 }

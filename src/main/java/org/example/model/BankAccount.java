@@ -109,12 +109,18 @@ public class BankAccount {
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         BankAccount account = (BankAccount) o;
-        return Objects.equals(id, account.id) && Objects.equals(userId, account.userId) && Objects.equals(balance, account.balance) && Objects.equals(lock, account.lock) && accountType == account.accountType && status == account.status;
+        return Objects.equals(id, account.id) &&
+                Objects.equals(userId, account.userId) &&
+                balance.compareTo(account.balance) == 0 &&
+                accountType == account.accountType &&
+                status == account.status;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, userId, balance, lock, accountType, status);
+        // lock не участвует: у каждого объекта свой ReentrantLock, это не данные счёта.
+        // balance — без хвостовых нулей, чтобы hashCode был согласован с equals (compareTo): 100 и 100.00 равны.
+        return Objects.hash(id, userId, balance.stripTrailingZeros(), accountType, status);
     }
 
     @Override

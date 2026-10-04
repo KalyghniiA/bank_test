@@ -162,13 +162,7 @@ public class SavingAccount extends BankAccount implements InterestBearingAccount
         SavingAccount that = (SavingAccount) o;
         return getWithdrawLimit() == that.getWithdrawLimit() &&
                 maxWithdrawalLimit == that.maxWithdrawalLimit &&
-                Objects.equals(dateLastAccrual, that.dateLastAccrual) &&
-                Objects.equals(id, that.id) &&
-                Objects.equals(userId, that.userId) &&
-                Objects.equals(balance, that.balance) &&
-                Objects.equals(lock, that.lock) &&
-                accountType == that.accountType &&
-                status == that.status;
+                Objects.equals(dateLastAccrual, that.dateLastAccrual);
     }
 
     @Override
