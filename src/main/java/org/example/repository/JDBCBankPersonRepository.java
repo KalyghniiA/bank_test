@@ -151,6 +151,7 @@ public class JDBCBankPersonRepository implements Repository<UUID, Person> {
                         psUpdate.setString(6, newItem.getEmail());
                     }
                     psUpdate.setInt(7, statusId);
+                    psUpdate.setObject(8, newItem.getId());
 
                     psUpdate.executeUpdate();
 
