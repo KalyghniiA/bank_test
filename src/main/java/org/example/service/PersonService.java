@@ -3,6 +3,7 @@ package org.example.service;
 import org.example.dto.AccountRequestDTO;
 import org.example.dto.CredentialsRequestDTO;
 import org.example.dto.PersonRequestDTO;
+import org.example.dto.PersonResponseDTO;
 import org.example.exceptions.*;
 import org.example.mapper.AccountMapper;
 import org.example.mapper.CredentialsMapper;
@@ -36,6 +37,15 @@ public class PersonService {
         this.bankAccountRepository = bankAccountRepository;
         this.bankCredentialsRepository = bankCredentialsRepository;
         this.transactionManager = transactionManager;
+    }
+
+    public PersonResponseDTO findById(UUID id) {
+        logger.info("Начата операция получения пользователя по id {}", id);
+        PersonResponseDTO result = PersonMapper.toPersonResponseDTO(
+                transactionManager.runInTransaction(() -> bankPersonRepository.get(id))
+                        .orElseThrow(() -> new RepositoryItemExistsException("Пользователя нет в базе")));
+        logger.info("Пользователь получен");
+        return result;
     }
 
     public void createPerson(PersonRequestDTO personDTO, CredentialsRequestDTO credDto) {
