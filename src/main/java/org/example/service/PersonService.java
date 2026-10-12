@@ -48,11 +48,12 @@ public class PersonService {
         return result;
     }
 
-    public void createPerson(PersonRequestDTO personDTO, CredentialsRequestDTO credDto) {
+    public UUID createPerson(PersonRequestDTO personDTO, CredentialsRequestDTO credDto) {
         logger.info("Начата операция по регистрации пользователя");
+        Person person = PersonMapper.toPerson(personDTO);
         try {
             transactionManager.runInTransaction(() -> {
-                Person person = PersonMapper.toPerson(personDTO);
+
                 bankPersonRepository.save(person.getId(), person);
 
 
@@ -61,6 +62,7 @@ public class PersonService {
                 bankCredentialsRepository.save(cred.id(), cred);
 
                 logger.info("Пользователь успешно зарегистрирован");
+
             });
         } catch (RepositoryException e) {
             logger.error("Произошла ошибка работы с данными: {}", e.getCause().getMessage(), e);
@@ -69,7 +71,7 @@ public class PersonService {
             logger.error("Произошла ошибка менеджера транзакции", e);
             throw e;
         }
-
+        return person.getId();
     }
 
     public void createAccountToPerson(UUID personId, AccountRequestDTO accountDTO) {
