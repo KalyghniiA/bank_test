@@ -1,6 +1,8 @@
 package org.example;
 
 import com.zaxxer.hikari.HikariDataSource;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
 import org.apache.catalina.Context;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.startup.Tomcat;
@@ -16,10 +18,12 @@ import org.example.servlet.HealthServlet;
 import org.example.servlet.PersonServlet;
 import org.example.util.ConnectionService;
 import org.example.util.Dictionaries;
+import org.example.util.JsonSupport;
 import org.example.util.transaction_manager.JDBCTransactionManager;
 import org.example.util.transaction_manager.TransactionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.File;
 import java.util.UUID;
@@ -35,6 +39,8 @@ public class Main {
         Repository<UUID, Credentials> credentialsRepository = new JDBCBankCredentialsRepository();
         PersonService personService = new PersonService(personRepository, bankAccountRepository, credentialsRepository, transactionManager);
         Dictionaries dictionaries = new Dictionaries(ds);
+        JsonSupport json = new JsonSupport(new JsonMapper());
+        Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
 
         Tomcat tomcat = new Tomcat();
         tomcat.setBaseDir("target/tomcat");
@@ -46,7 +52,7 @@ public class Main {
         Tomcat.addServlet(ctx, "health", new HealthServlet());
         ctx.addServletMapping("/api/health", "health");
 
-        Tomcat.addServlet(ctx, "person", new PersonServlet(personService));
+        Tomcat.addServlet(ctx, "person", new PersonServlet(personService, json, validator));
         ctx.addServletMapping("/api/person/*", "person");
 
         dictionaries.loadDictionary();
