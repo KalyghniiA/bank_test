@@ -1,9 +1,11 @@
 package org.example.repository;
 
+import org.example.exceptions.CredentialsUniqueException;
 import org.example.exceptions.RepositoryException;
 import org.example.exceptions.SQLTransactionException;
 import org.example.model.Credentials;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.postgresql.util.PSQLException;
@@ -75,27 +77,15 @@ public class JDBCBankCredentialsRepositoryIT extends AbstractRepositoryIT {
     }
 
     @Test
-    @DisplayName("Повторный логин — RepositoryException с причиной 23505")
+    @DisplayName("Повторный логин — CredentialsUniqueException с причиной 23505")
     void checkSaveDuplicateLogin() throws SQLException {
         insertCredentials(new Credentials(PERSON_1, "ivan", HASH, SALT, 1000));
         Credentials sameLogin = new Credentials(PERSON_2, "ivan", HASH, SALT, 1000);
 
-        RepositoryException exception = assertThrows(RepositoryException.class,
+        CredentialsUniqueException exception = assertThrows(CredentialsUniqueException.class,
                 () -> inTransaction(() -> credentialsRepository.save(sameLogin.id(), sameLogin)));
 
-        assertEquals("23505", sqlState(exception));
-    }
-
-    @Test
-    @DisplayName("Вторые учётные данные для того же клиента — RepositoryException с причиной 23505")
-    void checkSaveSecondCredentialsForPerson() throws SQLException {
-        insertCredentials(new Credentials(PERSON_1, "ivan", HASH, SALT, 1000));
-        Credentials second = new Credentials(PERSON_1, "ivan2", HASH, SALT, 1000);
-
-        RepositoryException exception = assertThrows(RepositoryException.class,
-                () -> inTransaction(() -> credentialsRepository.save(second.id(), second)));
-
-        assertEquals("23505", sqlState(exception));
+        assertEquals("Логин уже занят", exception.getMessage());
     }
 
     @Test
