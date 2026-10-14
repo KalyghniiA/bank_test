@@ -20,7 +20,6 @@ public class JsonSupport {
 
     public void write(HttpServletResponse resp, int status, Object obj) throws IOException {
         resp.setContentType("application/json");
-        resp.setCharacterEncoding("UTF-8");
         resp.setStatus(status);
         mapper.writeValue(resp.getOutputStream(), obj);
     }
