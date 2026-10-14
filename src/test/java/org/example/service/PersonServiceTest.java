@@ -3,6 +3,7 @@ package org.example.service;
 import org.example.dto.AccountRequestDTO;
 import org.example.dto.CredentialsRequestDTO;
 import org.example.dto.PersonRequestDTO;
+import org.example.dto.PersonResponseDTO;
 import org.example.exceptions.PersonAuthException;
 import org.example.exceptions.RepositoryItemExistsException;
 import org.example.model.BankAccount;
@@ -70,7 +71,7 @@ public class PersonServiceTest {
             PersonRequestDTO person = new PersonRequestDTO("firstName", "subname", null, LocalDate.of(1990,12, 1), "9111111111", null);
             CredentialsRequestDTO credentials = new CredentialsRequestDTO("login", "secret");
 
-            personService.createPerson(person, credentials);
+            UUID savePersonId = personService.createPerson(person, credentials);
 
             ArgumentCaptor<Person> captorPerson = ArgumentCaptor.forClass(Person.class);
             ArgumentCaptor<Credentials> captorCredentials = ArgumentCaptor.forClass(Credentials.class);
@@ -85,7 +86,8 @@ public class PersonServiceTest {
                     () -> assertEquals(person.birthDate(), captorPerson.getValue().getBirthDate()),
                     () -> assertEquals(person.number(), captorPerson.getValue().getPhoneNumber()),
                     () -> assertEquals(person.email(), captorPerson.getValue().getEmail()),
-                    () -> assertEquals(credentials.login(), captorCredentials.getValue().login())
+                    () -> assertEquals(credentials.login(), captorCredentials.getValue().login()),
+                    () -> assertEquals(savePersonId, captorPerson.getValue().getId())
             );
 
         }
@@ -124,6 +126,8 @@ public class PersonServiceTest {
             verify(personRepository, times(1)).get(eq(person.getId()));
             verify(bankAccountRepository, times(1)).delete(eq(account.getId()));
         }
+
+
     }
 
     @Nested
@@ -234,6 +238,49 @@ public class PersonServiceTest {
 
             verify(bankAccountRepository, never()).delete(any());
             assertEquals("Данного пользователя нет в базе",  exception.getMessage());
+        }
+    }
+
+    @Nested
+    @DisplayName("Проверки получения клиента")
+    class FindPersonToId {
+        @BeforeEach
+        void setUp() {
+            when(transactionManager.runInTransaction(any(Supplier.class))).thenAnswer(invocation -> {
+                Supplier<?> supplier =  invocation.getArgument(0);
+                return supplier.get();
+            });
+        }
+
+        @Test
+        @DisplayName("Проверка получения клиента")
+        void checkFindPersonById() {
+            Person person = new Person("firstName", "subname", null, LocalDate.of(1990,12, 1), "9111111111", null);
+
+            when(personRepository.get(eq(person.getId()))).thenReturn(Optional.of(person));
+
+            PersonResponseDTO result = personService.findById(person.getId());
+            verify(personRepository, times(1)).get(eq(person.getId()));
+
+
+            assertAll(
+                    () -> assertEquals(person.getFirstName(), result.firstName()),
+                    () -> assertEquals(person.getSubName(), result.subName()),
+                    () -> assertEquals(person.getMiddleName(), result.middleName()),
+                    () -> assertEquals(person.getBirthDate(), result.birthDate()),
+                    () -> assertEquals(person.getPhoneNumber(), result.phoneNumber()),
+                    () -> assertEquals(person.getEmail(), result.email())
+            );
+        }
+
+        @Test
+        @DisplayName("Проверка получения когда клиента нет")
+        void checkFindPersonNotFound() {
+            UUID personId = UUID.randomUUID();
+            when(personRepository.get(eq(personId))).thenReturn(Optional.empty());
+            RepositoryItemExistsException exception = assertThrows(RepositoryItemExistsException.class, () -> personService.findById(personId));
+
+            assertEquals("Пользователя нет в базе", exception.getMessage());
         }
     }
 }
