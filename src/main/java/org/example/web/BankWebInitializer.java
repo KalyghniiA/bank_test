@@ -28,6 +28,6 @@ public class BankWebInitializer implements ServletContainerInitializer {
         health.addMapping("/api/health");
 
         ServletRegistration.Dynamic person = ctx.addServlet("person", new PersonServlet());
-        person.addMapping("/api/person/*");
+        person.addMapping("/api/persons/*");
     }
 }

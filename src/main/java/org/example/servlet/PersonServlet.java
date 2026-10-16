@@ -124,7 +124,7 @@ public class PersonServlet extends HttpServlet {
             }
 
             UUID idPerson = personService.createPerson(info.person(), info.credentials());
-            resp.setHeader("Location", "/api/person/" + idPerson);
+            resp.setHeader("Location", "/api/persons/" + idPerson);
             json.write(resp, HttpServletResponse.SC_CREATED, new CreatedResponseDTO(idPerson));
 
         } catch (JacksonException e) {
