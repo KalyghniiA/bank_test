@@ -126,7 +126,11 @@ public class PersonService {
         logger.info("Начата операция по авторизации пользователя {}", credDto.login());
         try  {
            return transactionManager.runInTransaction(() -> {
-                Credentials cred = ((CredentialsRepository<UUID, Credentials>) bankCredentialsRepository).getByLogin(credDto.login()).orElseThrow(() -> new PersonAuthException("Данный пользователь не найден"));
+                Credentials cred = ((CredentialsRepository<UUID, Credentials>) bankCredentialsRepository).getByLogin(credDto.login())
+                        .orElseThrow(() -> {
+                            logger.warn("Пользователь не найден");
+                            return new PersonAuthException("Данный пользователь не найден");
+                        });
                 byte[] salt = cred.salt();
                 int iterations = cred.iterations();
 

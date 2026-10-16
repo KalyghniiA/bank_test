@@ -1,12 +1,8 @@
 package org.example.web;
 
-import jakarta.servlet.DispatcherType;
-import jakarta.servlet.ServletContainerInitializer;
-import jakarta.servlet.ServletContext;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.FilterRegistration;
-import jakarta.servlet.ServletRegistration;
+import jakarta.servlet.*;
 import org.example.filter.RequestIdFilter;
+import org.example.servlet.AuthServlet;
 import org.example.servlet.HealthServlet;
 import org.example.servlet.PersonServlet;
 import org.example.filter.EncodingFilter;
@@ -19,6 +15,11 @@ public class BankWebInitializer implements ServletContainerInitializer {
     public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException {
         ctx.addListener(new BankContextListener());
 
+        ctx.setSessionTrackingModes(EnumSet.of(SessionTrackingMode.COOKIE));
+        var sessionConfig = ctx.getSessionCookieConfig();
+        sessionConfig.setHttpOnly(true);
+        sessionConfig.setAttribute("SameSite", "Strict");
+
         FilterRegistration.Dynamic encoding = ctx.addFilter("encoding", new EncodingFilter());
         encoding.addMappingForUrlPatterns(EnumSet.of(DispatcherType.REQUEST), true, "/*");
         FilterRegistration.Dynamic requestId = ctx.addFilter("requestId", new RequestIdFilter());
@@ -29,5 +30,8 @@ public class BankWebInitializer implements ServletContainerInitializer {
 
         ServletRegistration.Dynamic person = ctx.addServlet("person", new PersonServlet());
         person.addMapping("/api/persons/*");
+
+        ServletRegistration.Dynamic auth = ctx.addServlet("auth", new AuthServlet());
+        auth.addMapping("/api/auth/*");
     }
 }
