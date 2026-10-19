@@ -1,6 +1,7 @@
 package org.example.web;
 
 import jakarta.servlet.*;
+import org.example.filter.AuthFilter;
 import org.example.filter.RequestIdFilter;
 import org.example.servlet.AuthServlet;
 import org.example.servlet.HealthServlet;
@@ -24,6 +25,8 @@ public class BankWebInitializer implements ServletContainerInitializer {
         encoding.addMappingForUrlPatterns(EnumSet.of(DispatcherType.REQUEST), true, "/*");
         FilterRegistration.Dynamic requestId = ctx.addFilter("requestId", new RequestIdFilter());
         requestId.addMappingForUrlPatterns(EnumSet.of(DispatcherType.REQUEST), true, "/*");
+        FilterRegistration.Dynamic authFilter = ctx.addFilter("auth", new AuthFilter());
+        authFilter.addMappingForUrlPatterns(EnumSet.of(DispatcherType.REQUEST), true, "/api/*");
 
         ServletRegistration.Dynamic health = ctx.addServlet("health", new HealthServlet());
         health.addMapping("/api/health");
@@ -33,5 +36,6 @@ public class BankWebInitializer implements ServletContainerInitializer {
 
         ServletRegistration.Dynamic auth = ctx.addServlet("auth", new AuthServlet());
         auth.addMapping("/api/auth/*");
+
     }
 }
