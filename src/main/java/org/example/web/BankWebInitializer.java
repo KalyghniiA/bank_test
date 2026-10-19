@@ -5,6 +5,7 @@ import org.example.filter.AuthFilter;
 import org.example.filter.RequestIdFilter;
 import org.example.servlet.AuthServlet;
 import org.example.servlet.HealthServlet;
+import org.example.servlet.MeServlet;
 import org.example.servlet.PersonServlet;
 import org.example.filter.EncodingFilter;
 
@@ -37,5 +38,7 @@ public class BankWebInitializer implements ServletContainerInitializer {
         ServletRegistration.Dynamic auth = ctx.addServlet("auth", new AuthServlet());
         auth.addMapping("/api/auth/*");
 
+        ServletRegistration.Dynamic me = ctx.addServlet("me", new MeServlet());
+        me.addMapping("/api/me");
     }
 }
