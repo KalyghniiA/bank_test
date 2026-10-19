@@ -42,7 +42,7 @@ public class AuthServlet extends HttpServlet {
 
     @Override
     public void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        log.info("Получен запрос на авторизацию");
+        log.info("Получен запрос на страницу авторизации");
         String pathInfo = req.getPathInfo();
 
         if (pathInfo == null) {
@@ -69,6 +69,7 @@ public class AuthServlet extends HttpServlet {
     }
 
     private void login(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        log.info("Получен запрос на авторизацию");
         try {
             CredentialsRequestDTO credentials = json.read(req, CredentialsRequestDTO.class);
             if (credentials == null) {
@@ -104,6 +105,7 @@ public class AuthServlet extends HttpServlet {
             session.setMaxInactiveInterval(15 * 60);
             PersonResponseDTO personDto = PersonMapper.toPersonResponseDTO(person);
             json.write(resp, HttpServletResponse.SC_OK, personDto);
+            log.info("Авторизация завершена");
 
         } catch (PersonAuthException e) {
             log.warn("Ошибка авторизации: не верные логин или пароль");
@@ -124,11 +126,13 @@ public class AuthServlet extends HttpServlet {
     }
 
     private void logout(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        log.info("Получен запрос на выход");
         HttpSession session = req.getSession(false);
         if (session != null) {
             session.invalidate();
         }
 
         resp.setStatus(HttpServletResponse.SC_NO_CONTENT);
+        log.info("Пользователь вышел");
     }
 }
