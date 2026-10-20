@@ -3,6 +3,7 @@ package org.example;
 import org.apache.catalina.Context;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.startup.Tomcat;
+import org.apache.catalina.valves.ErrorReportValve;
 import org.example.web.BankWebInitializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +22,10 @@ public class Main {
         Context ctx = tomcat.addContext("", new File(".").getAbsolutePath());
 
         ctx.addServletContainerInitializer(new BankWebInitializer(), null);
+        ErrorReportValve valve = new ErrorReportValve();
+        valve.setShowReport(false);       // без стектрейса и описания
+        valve.setShowServerInfo(false);   // без версии Tomcat
+        tomcat.getHost().getPipeline().addValve(valve);
 
         tomcat.start();
 
