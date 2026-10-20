@@ -1,5 +1,6 @@
 package org.example.repository;
 
+import org.example.exceptions.CredentialsUniqueException;
 import org.example.exceptions.RepositoryException;
 import org.example.exceptions.SQLTransactionException;
 import org.example.model.Credentials;
@@ -25,8 +26,12 @@ public class JDBCBankCredentialsRepository implements CredentialsRepository<UUID
             ps.setInt(6, item.iterations());
             ps.executeUpdate();
         } catch (SQLException e) {
+            if  ("23505".equals(e.getSQLState())) {
+                throw new CredentialsUniqueException("Логин уже занят", e);//Данный вариант может быть и вызван дублем id пользователя, но из приложения данный способ не допустим
+            }
             throw new RepositoryException("Произошла ошибка базы", e);
         }
+
     }
 
     @Override

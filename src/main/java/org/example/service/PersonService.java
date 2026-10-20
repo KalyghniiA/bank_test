@@ -3,6 +3,7 @@ package org.example.service;
 import org.example.dto.AccountRequestDTO;
 import org.example.dto.CredentialsRequestDTO;
 import org.example.dto.PersonRequestDTO;
+import org.example.dto.PersonResponseDTO;
 import org.example.exceptions.*;
 import org.example.mapper.AccountMapper;
 import org.example.mapper.CredentialsMapper;
@@ -38,11 +39,21 @@ public class PersonService {
         this.transactionManager = transactionManager;
     }
 
-    public void createPerson(PersonRequestDTO personDTO, CredentialsRequestDTO credDto) {
+    public PersonResponseDTO findById(UUID id) {
+        logger.info("Начата операция получения пользователя по id {}", id);
+        PersonResponseDTO result = PersonMapper.toPersonResponseDTO(
+                transactionManager.runInTransaction(() -> bankPersonRepository.get(id))
+                        .orElseThrow(() -> new RepositoryItemExistsException("Пользователя нет в базе")));
+        logger.info("Пользователь получен");
+        return result;
+    }
+
+    public UUID createPerson(PersonRequestDTO personDTO, CredentialsRequestDTO credDto) {
         logger.info("Начата операция по регистрации пользователя");
+        Person person = PersonMapper.toPerson(personDTO);
         try {
             transactionManager.runInTransaction(() -> {
-                Person person = PersonMapper.toPerson(personDTO);
+
                 bankPersonRepository.save(person.getId(), person);
 
 
@@ -51,6 +62,7 @@ public class PersonService {
                 bankCredentialsRepository.save(cred.id(), cred);
 
                 logger.info("Пользователь успешно зарегистрирован");
+
             });
         } catch (RepositoryException e) {
             logger.error("Произошла ошибка работы с данными: {}", e.getCause().getMessage(), e);
@@ -59,7 +71,7 @@ public class PersonService {
             logger.error("Произошла ошибка менеджера транзакции", e);
             throw e;
         }
-
+        return person.getId();
     }
 
     public void createAccountToPerson(UUID personId, AccountRequestDTO accountDTO) {
@@ -114,7 +126,11 @@ public class PersonService {
         logger.info("Начата операция по авторизации пользователя {}", credDto.login());
         try  {
            return transactionManager.runInTransaction(() -> {
-                Credentials cred = ((CredentialsRepository<UUID, Credentials>) bankCredentialsRepository).getByLogin(credDto.login()).orElseThrow(() -> new PersonAuthException("Данный пользователь не найден"));
+                Credentials cred = ((CredentialsRepository<UUID, Credentials>) bankCredentialsRepository).getByLogin(credDto.login())
+                        .orElseThrow(() -> {
+                            logger.warn("Пользователь не найден");
+                            return new PersonAuthException("Данный пользователь не найден");
+                        });
                 byte[] salt = cred.salt();
                 int iterations = cred.iterations();
 

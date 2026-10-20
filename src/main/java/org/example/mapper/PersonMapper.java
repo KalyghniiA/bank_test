@@ -1,6 +1,7 @@
 package org.example.mapper;
 
 import org.example.dto.PersonRequestDTO;
+import org.example.dto.PersonResponseDTO;
 import org.example.model.Person;
 import org.example.util.PersonStatus;
 
@@ -40,6 +41,17 @@ public class PersonMapper {
                 dto.number(),
                 dto.email(),
                 status
+        );
+    }
+
+    public static PersonResponseDTO toPersonResponseDTO(Person person) {
+        return new PersonResponseDTO(
+                person.getFirstName(),
+                person.getSubName(),
+                person.getMiddleName(),
+                person.getBirthDate(),
+                person.getPhoneNumber(),
+                person.getEmail()
         );
     }
 }
