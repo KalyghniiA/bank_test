@@ -5,6 +5,7 @@ import org.example.exceptions.RepositoryException;
 import org.example.exceptions.SQLTransactionException;
 import org.example.model.Credentials;
 import org.example.util.transaction_manager.ConnectionHolder;
+import org.springframework.stereotype.Repository;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -13,6 +14,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+@Repository
 public class JDBCBankCredentialsRepository implements CredentialsRepository<UUID, Credentials> {
     @Override
     public void save(UUID uuid, Credentials item) {

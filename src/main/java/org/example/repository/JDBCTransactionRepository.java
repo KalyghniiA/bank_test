@@ -12,6 +12,7 @@ import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.*;
 
+@org.springframework.stereotype.Repository
 public class JDBCTransactionRepository implements Repository<UUID, Transaction> {
 
     @Override

@@ -11,18 +11,21 @@ import org.example.util.TransactionType;
 import org.example.util.transaction_manager.TransactionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.UUID;
 
-
+@Service
 public class BankAccountService {
     private static final Logger logger = LoggerFactory.getLogger(BankAccountService.class);
     private final Repository<UUID, BankAccount> bankAccountRepository;
     private final Repository<UUID, Transaction> transactionRepository;
     private final TransactionManager transactionManager;
 
-    public BankAccountService(Repository<UUID, BankAccount> bankAccountRepository, Repository<UUID, Transaction> transactionRepository, TransactionManager transactionManager) {
+    public BankAccountService(Repository<UUID, BankAccount> bankAccountRepository,
+                              Repository<UUID, Transaction> transactionRepository,
+                              TransactionManager transactionManager) {
         this.bankAccountRepository = bankAccountRepository;
         this.transactionRepository = transactionRepository;
         this.transactionManager = transactionManager;

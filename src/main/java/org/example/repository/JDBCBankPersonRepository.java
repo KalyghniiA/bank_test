@@ -17,6 +17,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+@org.springframework.stereotype.Repository
 public class JDBCBankPersonRepository implements Repository<UUID, Person> {
     private final ConcurrentHashMap<UUID, Person> repository = new ConcurrentHashMap<>();
 

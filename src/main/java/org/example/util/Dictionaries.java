@@ -2,6 +2,7 @@ package org.example.util;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -10,6 +11,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.concurrent.ConcurrentHashMap;
 
+@Component
 public class Dictionaries {
     private static final Logger logger = LoggerFactory.getLogger(Dictionaries.class);
     public static final ConcurrentHashMap<Integer, String> statusAccountDictionary = new ConcurrentHashMap<>();

@@ -17,11 +17,13 @@ import org.example.util.PasswordService;
 import org.example.util.transaction_manager.TransactionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
 import java.security.MessageDigest;
 import java.util.Optional;
 import java.util.UUID;
 
+@Service
 public class PersonService {
     private static final Logger logger = LoggerFactory.getLogger(PersonService.class);
     private final Repository<UUID, Person> bankPersonRepository;
