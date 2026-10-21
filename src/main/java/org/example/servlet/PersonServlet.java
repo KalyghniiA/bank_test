@@ -51,7 +51,7 @@ public class PersonServlet extends HttpServlet {
         switch (info.length) {
             case 2: {
                 log.info("Получение пользователя по id {}", info[1]);
-                getPerson(info[1], resp);
+                getPerson(info[1], req, resp);
                 break;
             }
             default: {
@@ -81,7 +81,7 @@ public class PersonServlet extends HttpServlet {
         registration(req, resp);
     }
 
-    private void getPerson(String id, HttpServletResponse resp) throws IOException {
+    private void getPerson(String id, HttpServletRequest req, HttpServletResponse resp) throws IOException {
         try {
             UUID uuid;
             try {
@@ -91,12 +91,19 @@ public class PersonServlet extends HttpServlet {
                 return;
             }
 
+            UUID sessionPersonId = (UUID) req.getAttribute("personId");
+            if (!uuid.equals(sessionPersonId)) {
+                log.warn("Попытка получения чужих данных: Запрашивающий клиент: {}; Запрашиваемый клиент: {}", sessionPersonId, uuid);
+                json.writeError(resp, HttpServletResponse.SC_NOT_FOUND, "Данного клиента нет в базе");
+                return;
+            }
+
             PersonResponseDTO result = personService.findById(uuid);
 
             json.write(resp, HttpServletResponse.SC_OK, result);
         } catch (RepositoryItemExistsException e) {
             log.info("Пользователя с id {} нет в базе", id);
-            json.writeError(resp, HttpServletResponse.SC_NOT_FOUND, e.getMessage());
+            json.writeError(resp, HttpServletResponse.SC_NOT_FOUND, "Данного клиента нет в базе");
         } catch (RuntimeException e) {
             log.error("Ошибка при получении клиента {}", id, e);
             json.writeError(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Внутренняя ошибка");

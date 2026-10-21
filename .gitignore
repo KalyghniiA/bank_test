@@ -44,3 +44,4 @@ TASKS.md
 ### Logs & build artifacts ###
 logs/
 dependency-reduced-pom.xml
+.idea
