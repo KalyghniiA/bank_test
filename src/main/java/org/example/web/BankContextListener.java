@@ -6,7 +6,6 @@ import jakarta.servlet.ServletContextListener;
 import jakarta.validation.Validator;
 import org.example.BankConfig;
 import org.example.service.PersonService;
-import org.example.util.Dictionaries;
 import org.example.util.JsonSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,8 +21,6 @@ public class BankContextListener implements ServletContextListener {
         logger.info("Начало сборки контекста");
         context = new AnnotationConfigApplicationContext(BankConfig.class);
         ServletContext sc = sce.getServletContext();
-
-        context.getBean(Dictionaries.class).loadDictionary();
 
         sc.setAttribute("personService", context.getBean(PersonService.class));
         sc.setAttribute("json", context.getBean(JsonSupport.class));

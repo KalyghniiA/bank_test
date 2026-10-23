@@ -1,6 +1,5 @@
 package org.example.repository;
 
-
 import org.example.exceptions.RepositoryParamException;
 import org.example.exceptions.RepositoryException;
 import org.example.exceptions.SQLTransactionException;
@@ -15,11 +14,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 @org.springframework.stereotype.Repository
 public class JDBCBankPersonRepository implements Repository<UUID, Person> {
-    private final ConcurrentHashMap<UUID, Person> repository = new ConcurrentHashMap<>();
 
     @Override
     public void save(UUID uuid, Person item) {

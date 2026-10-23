@@ -9,21 +9,26 @@ import org.example.util.JsonSupport;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
+import org.springframework.core.env.Environment;
 import tools.jackson.databind.json.JsonMapper;
 
 @Configuration
 @ComponentScan("org.example")
+@PropertySource("classpath:bank.properties")
 public class BankConfig {
 
     @Bean
-    public HikariDataSource dataSource() {
+    public HikariDataSource dataSource(Environment env) {
         HikariConfig config = new HikariConfig();
         config.setJdbcUrl(String.format("jdbc:postgresql://%s:%s/%s",
-                System.getenv("DB_HOST"),
-                System.getenv("DB_PORT"),
-                System.getenv("DB_NAME")));
-        config.setUsername(System.getenv("DB_USER"));
-        config.setPassword(System.getenv("DB_PASSWORD"));
+                env.getRequiredProperty("DB_HOST"),
+                env.getRequiredProperty("DB_PORT"),
+                env.getRequiredProperty("DB_NAME")));
+        config.setUsername(env.getRequiredProperty("DB_USER"));
+        config.setPassword(env.getRequiredProperty("DB_PASSWORD"));
+        config.setMaximumPoolSize(env.getProperty("db.pool.size", Integer.class, 10));
+        config.setConnectionTimeout(env.getProperty("db.connection.timeout", Integer.class, 10000));
         return new HikariDataSource(config);
     }
 

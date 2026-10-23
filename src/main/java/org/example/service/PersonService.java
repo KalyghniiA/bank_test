@@ -13,6 +13,7 @@ import org.example.model.Credentials;
 import org.example.model.Person;
 import org.example.repository.*;
 
+import org.example.sender.NotificationSender;
 import org.example.util.PasswordService;
 import org.example.util.transaction_manager.TransactionManager;
 import org.slf4j.Logger;
@@ -30,15 +31,18 @@ public class PersonService {
     private final Repository<UUID, BankAccount> bankAccountRepository;
     private final Repository<UUID, Credentials> bankCredentialsRepository;
     private final TransactionManager transactionManager;
+    private final NotificationSender sender;
 
     public PersonService(Repository<UUID, Person> bankPersonRepository,
                          Repository<UUID, BankAccount> bankAccountRepository,
                          Repository<UUID, Credentials> bankCredentialsRepository,
-                         TransactionManager transactionManager) {
+                         TransactionManager transactionManager,
+                         NotificationSender sender) {
         this.bankPersonRepository = bankPersonRepository;
         this.bankAccountRepository = bankAccountRepository;
         this.bankCredentialsRepository = bankCredentialsRepository;
         this.transactionManager = transactionManager;
+        this.sender = sender;
     }
 
     public PersonResponseDTO findById(UUID id) {
@@ -64,7 +68,6 @@ public class PersonService {
                 bankCredentialsRepository.save(cred.id(), cred);
 
                 logger.info("Пользователь успешно зарегистрирован");
-
             });
         } catch (RepositoryException e) {
             logger.error("Произошла ошибка работы с данными: {}", e.getCause().getMessage(), e);
@@ -73,6 +76,7 @@ public class PersonService {
             logger.error("Произошла ошибка менеджера транзакции", e);
             throw e;
         }
+        sender.send(person, "personId: " + person.getId());
         return person.getId();
     }
 
