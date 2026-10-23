@@ -1,12 +1,14 @@
 package org.example.util.transaction_manager;
 
 import org.example.exceptions.TransactionManagerSQLException;
+import org.springframework.stereotype.Component;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.function.Supplier;
 
+@Component
 public class JDBCTransactionManager implements TransactionManager {
     private final DataSource ds;
 

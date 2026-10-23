@@ -11,6 +11,7 @@ import org.example.model.Credentials;
 import org.example.model.Person;
 import org.example.repository.CredentialsRepository;
 import org.example.repository.Repository;
+import org.example.sender.NotificationSender;
 import org.example.util.AccountType;
 import org.example.util.PasswordService;
 import org.example.util.transaction_manager.TransactionManager;
@@ -45,12 +46,13 @@ public class PersonServiceTest {
     CredentialsRepository<UUID, Credentials> credentialsRepository;
     @Mock
     TransactionManager transactionManager;
+    NotificationSender sender =  mock(NotificationSender.class);
 
     PersonService personService;
 
     @BeforeEach
     void setUp() {
-        personService = new PersonService(personRepository, bankAccountRepository, credentialsRepository, transactionManager);
+        personService = new PersonService(personRepository, bankAccountRepository, credentialsRepository, transactionManager, sender);
     }
 
     @Nested

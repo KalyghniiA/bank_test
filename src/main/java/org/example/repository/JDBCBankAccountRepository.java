@@ -11,12 +11,12 @@ import org.example.util.Dictionaries;
 import org.example.util.AccountStatus;
 import org.example.util.transaction_manager.ConnectionHolder;
 
-
 import java.math.BigDecimal;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.*;
 
+@org.springframework.stereotype.Repository
 public class JDBCBankAccountRepository implements Repository<UUID, BankAccount> {
 
     @Override
