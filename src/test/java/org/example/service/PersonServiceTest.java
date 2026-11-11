@@ -46,7 +46,8 @@ public class PersonServiceTest {
     CredentialsRepository<UUID, Credentials> credentialsRepository;
     @Mock
     TransactionManager transactionManager;
-    NotificationSender sender =  mock(NotificationSender.class);
+    @Mock
+    NotificationSender sender;
 
     PersonService personService;
 
@@ -80,7 +81,7 @@ public class PersonServiceTest {
 
             verify(personRepository, times(1)).save(any(UUID.class), captorPerson.capture());
             verify(credentialsRepository, times(1)).save(any(UUID.class), captorCredentials.capture());
-
+            verify(sender).send(any(Person.class), anyString());
             assertAll(
                     () -> assertEquals(person.firstName(), captorPerson.getValue().getFirstName()),
                     () -> assertEquals(person.subName(), captorPerson.getValue().getSubName()),
