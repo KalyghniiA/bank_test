@@ -1,5 +1,6 @@
 package org.example.service;
 
+import org.example.aop.Timed;
 import org.example.dto.AccountRequestDTO;
 import org.example.dto.CredentialsRequestDTO;
 import org.example.dto.PersonRequestDTO;
@@ -54,6 +55,7 @@ public class PersonService {
         return result;
     }
 
+    @Timed
     public UUID createPerson(PersonRequestDTO personDTO, CredentialsRequestDTO credDto) {
         logger.info("Начата операция по регистрации пользователя");
         Person person = PersonMapper.toPerson(personDTO);

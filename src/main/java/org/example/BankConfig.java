@@ -9,6 +9,7 @@ import org.example.util.JsonSupport;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.core.env.Environment;
 import tools.jackson.databind.json.JsonMapper;
@@ -16,6 +17,7 @@ import tools.jackson.databind.json.JsonMapper;
 @Configuration
 @ComponentScan("org.example")
 @PropertySource("classpath:bank.properties")
+@EnableAspectJAutoProxy
 public class BankConfig {
 
     @Bean
