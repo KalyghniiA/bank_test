@@ -103,6 +103,11 @@
             <version>6.2.19</version>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>org.aspectj</groupId>
+            <artifactId>aspectjweaver</artifactId>
+            <version>1.9.27</version>
+        </dependency>
     </dependencies>
 
     <build>
