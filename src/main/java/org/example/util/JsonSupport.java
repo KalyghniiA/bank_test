@@ -3,10 +3,12 @@ package org.example.util;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.example.dto.ErrorMessageResponseDTO;
+import org.springframework.stereotype.Component;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 
+@Component
 public class JsonSupport {
     private final JsonMapper mapper;
 

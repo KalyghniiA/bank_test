@@ -5,7 +5,6 @@ import com.zaxxer.hikari.HikariDataSource;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
-import org.example.util.JsonSupport;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -35,8 +34,8 @@ public class BankConfig {
     }
 
     @Bean
-    public JsonSupport jsonSupport() {
-        return new JsonSupport(new JsonMapper());
+    public JsonMapper jsonMapper() {
+        return new JsonMapper();
     }
 
     @Bean
