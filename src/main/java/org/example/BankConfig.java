@@ -2,21 +2,14 @@ package org.example;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import jakarta.validation.Validation;
-import jakarta.validation.Validator;
-import jakarta.validation.ValidatorFactory;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.core.env.Environment;
-import tools.jackson.databind.json.JsonMapper;
+
 
 @Configuration
-@ComponentScan("org.example")
 @PropertySource("classpath:bank.properties")
-@EnableAspectJAutoProxy
 public class BankConfig {
 
     @Bean
@@ -31,20 +24,5 @@ public class BankConfig {
         config.setMaximumPoolSize(env.getProperty("db.pool.size", Integer.class, 10));
         config.setConnectionTimeout(env.getProperty("db.connection.timeout", Integer.class, 10000));
         return new HikariDataSource(config);
-    }
-
-    @Bean
-    public JsonMapper jsonMapper() {
-        return new JsonMapper();
-    }
-
-    @Bean
-    public ValidatorFactory validatorFactory() {
-        return Validation.buildDefaultValidatorFactory();
-    }
-
-    @Bean
-    public Validator validator(ValidatorFactory validatorFactory) {
-        return validatorFactory.getValidator();
     }
 }

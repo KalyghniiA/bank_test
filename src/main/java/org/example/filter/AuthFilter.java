@@ -17,9 +17,8 @@ public class AuthFilter extends HttpFilter {
     private static final Logger log =  LoggerFactory.getLogger(AuthFilter.class);
     private JsonSupport json;
 
-    @Override
-    public void init() {
-        json =  (JsonSupport) getServletContext().getAttribute("json");
+    public AuthFilter(JsonSupport json) {
+        this.json = json;
     }
 
     @Override

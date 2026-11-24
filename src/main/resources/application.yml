@@ -1,0 +1,15 @@
+server:
+  servlet:
+    session:
+      tracking-modes: cookie
+      cookie:
+        http-only: true
+        same-site: strict
+spring:
+  servlet:
+    encoding:
+      force: true
+logging:
+  level:
+    org.example: DEBUG
+    org.springframework.boot.web.servlet: DEBUG

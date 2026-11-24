@@ -33,11 +33,10 @@ public class AuthServlet extends HttpServlet {
     private Validator validator;
     private PersonService personService;
 
-    @Override
-    public void init() {
-        this.json = (JsonSupport) getServletContext().getAttribute("json");
-        this.validator = (Validator) getServletContext().getAttribute("validator");
-        this.personService = (PersonService) getServletContext().getAttribute("personService");
+    public AuthServlet(JsonSupport json, Validator validator, PersonService personService) {
+        this.json = json;
+        this.validator = validator;
+        this.personService = personService;
     }
 
     @Override

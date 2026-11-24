@@ -28,11 +28,10 @@ public class PersonServlet extends HttpServlet {
     private JsonSupport json;
     private Validator validator;
 
-    @Override
-    public void init() {
-        this.personService = (PersonService) getServletContext().getAttribute("personService");
-        this.json = (JsonSupport) getServletContext().getAttribute("json");
-        this.validator = (Validator) getServletContext().getAttribute("validator");
+    public PersonServlet(PersonService personService, JsonSupport json, Validator validator) {
+        this.personService = personService;
+        this.json = json;
+        this.validator = validator;
     }
 
     @Override
