@@ -18,10 +18,9 @@ public class MeServlet extends HttpServlet {
     private JsonSupport json;
     private PersonService personService;
 
-    @Override
-    public void init() {
-        json = (JsonSupport) getServletContext().getAttribute("json");
-        personService = (PersonService) getServletContext().getAttribute("personService");
+    public MeServlet(JsonSupport json, PersonService personService) {
+        this.json = json;
+        this.personService = personService;
     }
 
     @Override
