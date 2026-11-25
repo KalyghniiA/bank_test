@@ -5,7 +5,6 @@ import org.example.filter.AuthFilter;
 import org.example.filter.RequestIdFilter;
 import org.example.service.PersonService;
 import org.example.servlet.AuthServlet;
-import org.example.servlet.HealthServlet;
 import org.example.servlet.MeServlet;
 import org.example.servlet.PersonServlet;
 import org.example.util.JsonSupport;
@@ -19,11 +18,6 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @ComponentScan("org.example")
 public class WebConfig {
-    @Bean
-    public ServletRegistrationBean<HealthServlet> healthServlet() {
-        return new ServletRegistrationBean<>(new HealthServlet(), "/api/health");
-    }
-
     @Bean
     public ServletRegistrationBean<AuthServlet> authServlet(JsonSupport json, Validator validator, PersonService personService) {
         return new ServletRegistrationBean<>(new AuthServlet(json, validator, personService), "/api/auth/*");

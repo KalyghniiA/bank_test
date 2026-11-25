@@ -49,10 +49,6 @@ public class AuthFilter extends HttpFilter {
 
         String method = req.getMethod();
 
-        if (paths[2].equals("health")) {
-            return true;
-        }
-
         if (paths[2].equals("auth")
                 && req.getPathInfo() != null
                 && ("/login".equals(req.getPathInfo()) || "/logout".equals(req.getPathInfo()))) {

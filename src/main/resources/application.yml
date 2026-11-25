@@ -6,9 +6,18 @@ server:
         http-only: true
         same-site: strict
 spring:
+  config:
+    import: "optional:file:.env[.properties]"
   servlet:
     encoding:
       force: true
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:bank}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 10
+      connection-timeout: 10000
 logging:
   level:
     org.example: DEBUG
